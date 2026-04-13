@@ -42,42 +42,63 @@ class ApiClient {
 
   Uri _uri(String path) => Uri.parse('${Endpoints.baseUrl}$path');
 
-  Future<http.Response> get(String path, {bool auth = true}) async {
-    return _client.get(_uri(path), headers: await _headers(auth: auth));
+  Future<dynamic> _handleResponse(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.isEmpty) return Future.value(null);
+      return Future.value(json.decode(response.body));
+    } else {
+      throw Exception('API Error (${response.statusCode}): ${response.body}');
+    }
   }
 
-  Future<http.Response> post(
+  Future<dynamic> get(String path, {bool auth = true}) async {
+    final response = await _client.get(_uri(path), headers: await _headers(auth: auth));
+    return _handleResponse(response);
+  }
+
+  Future<dynamic> post(
     String path,
     Map<String, dynamic> body, {
     bool auth = false,
   }) async {
-    return _client.post(
+    final response = await _client.post(
       _uri(path),
       headers: await _headers(auth: auth),
       body: json.encode(body),
     );
+    return _handleResponse(response);
   }
 
-  Future<http.Response> put(
+  Future<dynamic> put(
     String path,
     Map<String, dynamic> body, {
     bool auth = true,
   }) async {
-    return _client.put(
+    final response = await _client.put(
       _uri(path),
       headers: await _headers(auth: auth),
       body: json.encode(body),
     );
+    return _handleResponse(response);
   }
 
-  Future<http.Response> postProtected(
+  Future<dynamic> delete(String path, {bool auth = true}) async {
+    final response = await _client.delete(
+      _uri(path),
+      headers: await _headers(auth: auth),
+    );
+    return _handleResponse(response);
+  }
+
+  Future<dynamic> postProtected(
     String path, {
     Map<String, dynamic>? body,
   }) async {
-    return _client.post(
+    final response = await _client.post(
       _uri(path),
       headers: await _headers(auth: true),
       body: body != null ? json.encode(body) : null,
     );
+    return _handleResponse(response);
   }
 }

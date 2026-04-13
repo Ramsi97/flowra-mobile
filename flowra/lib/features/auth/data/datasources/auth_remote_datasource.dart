@@ -9,21 +9,15 @@ class AuthRemoteDatasource {
   AuthRemoteDatasource(this.apiClient);
 
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await apiClient.post(
+    final body = await apiClient.post(
       Endpoints.login,
       {'email': email, 'password': password},
     );
 
-    final body = json.decode(response.body) as Map<String, dynamic>;
-
-    if (response.statusCode == 200) {
-      // Save token securely
-      final token = body['token'] as String;
-      await apiClient.saveToken(token);
-      return body;
-    }
-
-    throw Exception(body['error'] ?? 'Login failed');
+    // Save token securely
+    final token = body['token'] as String;
+    await apiClient.saveToken(token);
+    return body as Map<String, dynamic>;
   }
 
   Future<void> register(UserModel user, String password) async {
@@ -34,12 +28,7 @@ class AuthRemoteDatasource {
       'gender': user.gender,
     };
 
-    final response = await apiClient.post(Endpoints.register, payload);
-
-    if (response.statusCode != 201) {
-      final body = json.decode(response.body) as Map<String, dynamic>;
-      throw Exception(body['error'] ?? 'Registration failed');
-    }
+    await apiClient.post(Endpoints.register, payload);
   }
 
   Future<void> logout() async {
