@@ -23,7 +23,7 @@ class DailyFlowTile extends StatelessWidget {
         children: [
           _buildTimeline(context),
           const SizedBox(width: 12),
-          Expanded(child: _buildTaskCard()),
+          Expanded(child: _buildTaskCard(context)),
         ],
       ),
     );
@@ -68,7 +68,7 @@ class DailyFlowTile extends StatelessWidget {
     );
   }
 
-  Widget _buildTaskCard() {
+  Widget _buildTaskCard(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: GlassContainer(
@@ -81,16 +81,16 @@ class DailyFlowTile extends StatelessWidget {
               children: [
                 Text(
                   task.title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.getTextPrimary(context),
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   task.duration,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: AppColors.getTextSecondary(context),
                     fontSize: 12,
                   ),
                 ),
@@ -101,11 +101,13 @@ class DailyFlowTile extends StatelessWidget {
               task.description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: AppColors.getTextSecondary(context),
                 fontSize: 13,
               ),
             ),
+
+
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -26,25 +26,26 @@ class DailyGoalHeader extends StatelessWidget {
               child: CircularProgressIndicator(
                 value: percentage,
                 strokeWidth: 10,
-                backgroundColor: AppColors.surface,
+                backgroundColor: AppColors.getSurface(context),
                 color: AppColors.secondary,
                 strokeCap: StrokeCap.round,
               ),
             ),
             Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   '${(percentage * 100).toInt()}%',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.getTextPrimary(context),
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   '$completedTasks / $totalTasks Tasks',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: AppColors.getTextSecondary(context),
                     fontSize: 12,
                   ),
                 ),
@@ -53,10 +54,10 @@ class DailyGoalHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Daily Goal Progress',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: AppColors.getTextPrimary(context),
             fontSize: 16,
             fontWeight: FontWeight.w500,
           ),
@@ -65,3 +66,4 @@ class DailyGoalHeader extends StatelessWidget {
     );
   }
 }
+

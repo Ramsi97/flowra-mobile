@@ -14,7 +14,9 @@ class AuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
+
       width: double.infinity,
       height: 52,
       child: DecoratedBox(
@@ -25,11 +27,12 @@ class AuthButton extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6C63FF).withValues(alpha: 0.35),
+              color: const Color(0xFF6C63FF).withValues(alpha: isDark ? 0.35 : 0.15),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
+
         ),
         child: ElevatedButton(
           onPressed: isLoading ? null : onPressed,

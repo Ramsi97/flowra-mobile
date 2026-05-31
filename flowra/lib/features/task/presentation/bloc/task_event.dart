@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/task.dart';
+import 'task_state.dart';
 
 abstract class TaskEvent extends Equatable {
   @override
@@ -31,4 +32,12 @@ class DeleteTaskEvent extends TaskEvent {
 
   @override
   List<Object?> get props => [id];
+}
+
+class ChangeViewModeEvent extends TaskEvent {
+  final TaskViewMode viewMode;
+  ChangeViewModeEvent(this.viewMode);
+
+  @override
+  List<Object?> get props => [viewMode];
 }

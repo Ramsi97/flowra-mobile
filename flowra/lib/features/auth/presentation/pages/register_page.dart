@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../bloc/bloc/auth_bloc.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/auth_button.dart';
@@ -40,11 +41,11 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121220),
+      backgroundColor: AppColors.getBackground(context),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: AppColors.getTextPrimary(context)),
       ),
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
@@ -52,7 +53,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Registration successful! Please sign in.'),
-                backgroundColor: Color(0xFF6C63FF),
+                backgroundColor: AppColors.primary,
               ),
             );
             Navigator.pop(context);
@@ -60,7 +61,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: const Color(0xFFFF6B6B),
+                backgroundColor: AppColors.error,
               ),
             );
           }
@@ -78,9 +79,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     children: [
                       // Header
                       ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [Color(0xFF6C63FF), Color(0xFF8B5CF6)],
-                        ).createShader(bounds),
+                        shaderCallback: (bounds) => AppColors.primaryGradient.createShader(bounds),
                         child: const Text(
                           'Create Account',
                           style: TextStyle(
@@ -95,7 +94,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       Text(
                         'Join Flowra and boost your productivity',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: AppColors.getTextSecondary(context),
                           fontSize: 14,
                         ),
                       ),
@@ -140,17 +139,17 @@ class _RegisterPageState extends State<RegisterPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E1E2C),
+                          color: AppColors.getSurface(context),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: DropdownButtonFormField<String>(
-                          initialValue: _selectedGender,
-                          dropdownColor: const Color(0xFF1E1E2C),
-                          style: const TextStyle(color: Colors.white, fontSize: 15),
-                          decoration: InputDecoration(
+                          value: _selectedGender,
+                          dropdownColor: AppColors.getSurface(context),
+                          style: TextStyle(color: AppColors.getTextPrimary(context), fontSize: 15),
+                          decoration: const InputDecoration(
                             prefixIcon: Icon(
                               Icons.wc_outlined,
-                              color: const Color(0xFF6C63FF),
+                              color: AppColors.primary,
                               size: 22,
                             ),
                             border: InputBorder.none,
@@ -181,7 +180,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           Text(
                             'Already have an account? ',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
+                              color: AppColors.getTextSecondary(context),
                               fontSize: 14,
                             ),
                           ),
@@ -190,7 +189,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             child: const Text(
                               'Sign In',
                               style: TextStyle(
-                                color: Color(0xFF6C63FF),
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
@@ -208,4 +207,5 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
     );
   }
+
 }

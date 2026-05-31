@@ -8,12 +8,20 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
 
   TaskBloc({required this.repository}) : super(TaskInitial()) {
     on<LoadTasksEvent>((event, emit) async {
+      final currentMode = state is TasksLoaded ? (state as TasksLoaded).viewMode : TaskViewMode.day;
       emit(TaskLoading());
       final result = await repository.getTasks();
       result.fold(
         (failure) => emit(TaskError(failure.toString())),
-        (tasks) => emit(TasksLoaded(tasks)),
+        (tasks) => emit(TasksLoaded(tasks, viewMode: currentMode)),
       );
+    });
+
+    on<ChangeViewModeEvent>((event, emit) {
+      if (state is TasksLoaded) {
+        final currentState = state as TasksLoaded;
+        emit(TasksLoaded(currentState.tasks, viewMode: event.viewMode));
+      }
     });
 
     on<CreateTaskEvent>((event, emit) async {
@@ -21,7 +29,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       final result = await repository.createTask(event.task);
       result.fold(
         (failure) => emit(TaskError(failure.toString())),
-        (task) => add(LoadTasksEvent()), // Refresh list
+        (task) => add(LoadTasksEvent()),
       );
     });
 
@@ -30,7 +38,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       final result = await repository.updateTask(event.id, event.updates);
       result.fold(
         (failure) => emit(TaskError(failure.toString())),
-        (task) => add(LoadTasksEvent()), // Refresh list
+        (task) => add(LoadTasksEvent()),
       );
     });
 
@@ -39,7 +47,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
       final result = await repository.deleteTask(event.id);
       result.fold(
         (failure) => emit(TaskError(failure.toString())),
-        (_) => add(LoadTasksEvent()), // Refresh list
+        (_) => add(LoadTasksEvent()),
       );
     });
   }

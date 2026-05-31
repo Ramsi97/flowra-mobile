@@ -11,6 +11,7 @@ import 'package:flowra/features/task/data/datasources/task_remote_datasource.dar
 import 'package:flowra/features/task/data/repositories/task_repository_impl.dart';
 import 'package:flowra/features/task/domain/repositories/task_repository.dart';
 import 'package:flowra/features/task/presentation/bloc/task_bloc.dart';
+import 'package:flowra/features/settings/presentation/bloc/theme_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -50,4 +51,8 @@ Future<void> initDependencies() async {
 
   // ── Task – BLoC ──────────────────────────────────────────────────────────
   sl.registerFactory(() => TaskBloc(repository: sl<TaskRepository>()));
+
+  // ── Settings – BLoC ──────────────────────────────────────────────────────
+  sl.registerLazySingleton(() => ThemeBloc());
 }
+

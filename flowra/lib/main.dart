@@ -6,6 +6,8 @@ import 'package:flowra/features/auth/presentation/bloc/bloc/auth_bloc.dart';
 import 'package:flowra/features/auth/presentation/pages/login_page.dart';
 import 'package:flowra/features/home/presentation/pages/home_page.dart';
 import 'package:flowra/features/task/presentation/bloc/task_bloc.dart';
+import 'package:flowra/features/settings/presentation/bloc/theme_bloc.dart';
+import 'package:flowra/features/settings/presentation/bloc/theme_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,30 +24,48 @@ class FlowraApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => di.sl<AuthBloc>()),
         BlocProvider(create: (_) => di.sl<TaskBloc>()),
+        BlocProvider(create: (_) => di.sl<ThemeBloc>()),
       ],
-      child: MaterialApp(
-        title: 'Flowra',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: AppColors.background,
-          fontFamily: 'Inter', // Note: User may need to add this font to pubspec
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.primary,
-            brightness: Brightness.dark,
-            surface: AppColors.background,
-          ),
-          useMaterial3: true,
-        ),
-        home: BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, state) {
-            if (state is AuthAuthenticated) {
-              return const HomePage();
-            }
-            return const LoginPage();
-          },
-        ),
+      child: BlocBuilder<ThemeBloc, ThemeState>(
+        builder: (context, themeState) {
+          return MaterialApp(
+            title: 'Flowra',
+            debugShowCheckedModeBanner: false,
+            themeMode: themeState.themeMode,
+            theme: ThemeData(
+              brightness: Brightness.light,
+              scaffoldBackgroundColor: AppColors.lightBackground,
+              fontFamily: 'Inter',
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: AppColors.primary,
+                brightness: Brightness.light,
+                surface: AppColors.lightSurface,
+              ),
+              useMaterial3: true,
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              scaffoldBackgroundColor: AppColors.darkBackground,
+              fontFamily: 'Inter',
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: AppColors.primary,
+                brightness: Brightness.dark,
+                surface: AppColors.darkSurface,
+              ),
+              useMaterial3: true,
+            ),
+            home: BlocBuilder<AuthBloc, AuthState>(
+              builder: (context, state) {
+                if (state is AuthAuthenticated) {
+                  return const HomePage();
+                }
+                return const LoginPage();
+              },
+            ),
+          );
+        },
       ),
     );
   }
 }
+
