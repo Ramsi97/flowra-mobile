@@ -52,4 +52,21 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));
     }
   }
+
+  @override
+  Future<Either<Failure, AuthResponse>> checkAuth() async {
+    try {
+      final hasToken = await remoteDatasource.hasToken();
+      if (!hasToken) return const Left(ServerFailure('No cached token'));
+      
+      final token = await remoteDatasource.apiClient.getToken();
+      final user = await remoteDatasource.getUser();
+      if (token != null && user != null) {
+         return Right(AuthResponse(token: token, user: user));
+      }
+      return const Left(ServerFailure('Invalid cached session'));
+    } catch (e) {
+      return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
 }

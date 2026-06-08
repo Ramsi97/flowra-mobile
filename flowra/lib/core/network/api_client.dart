@@ -10,11 +10,15 @@ class ApiClient {
   final FlutterSecureStorage _storage;
 
   static const String _tokenKey = 'auth_token';
+  static const String _userKey = 'auth_user';
   static const Duration _timeout = Duration(seconds: 15);
 
   ApiClient({http.Client? client, FlutterSecureStorage? storage})
       : _client = client ?? http.Client(),
-        _storage = storage ?? const FlutterSecureStorage();
+        _storage = storage ??
+            const FlutterSecureStorage(
+              aOptions: AndroidOptions(encryptedSharedPreferences: true),
+            );
 
   // ── Token helpers ──────────────────────────────────────────────────────────
 
@@ -23,20 +27,36 @@ class ApiClient {
   }
 
   Future<String?> getToken() async {
-    return _storage.read(key: _tokenKey);
+    final token = await _storage.read(key: _tokenKey);
+    return token;
   }
 
   Future<void> deleteToken() async {
     await _storage.delete(key: _tokenKey);
   }
 
+  Future<void> saveUser(String userJson) async {
+    await _storage.write(key: _userKey, value: userJson);
+  }
+
+  Future<String?> getUser() async {
+    return _storage.read(key: _userKey);
+  }
+
+  Future<void> deleteUser() async {
+    await _storage.delete(key: _userKey);
+  }
+
   // ── HTTP helpers ───────────────────────────────────────────────────────────
 
-  Future<Map<String, String>> _headers({bool auth = false}) async {
-    final headers = {'Content-Type': 'application/json'};
+  Future<Map<String, String>> _headers({bool auth = true}) async {
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
     if (auth) {
       final token = await getToken();
-      if (token != null) {
+      if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
       }
     }
@@ -92,7 +112,7 @@ class ApiClient {
   Future<dynamic> post(
     String path,
     Map<String, dynamic> body, {
-    bool auth = false,
+    bool auth = true, // default to true so protected endpoints always send token
   }) async {
     return _wrapRequest(
       () async => _client.post(

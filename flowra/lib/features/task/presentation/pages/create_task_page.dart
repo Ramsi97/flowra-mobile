@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/task.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
+import '../bloc/task_state.dart';
 
 class CreateTaskPage extends StatefulWidget {
   const CreateTaskPage({super.key});
@@ -22,133 +23,191 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
   DateTime _deadline = DateTime.now().add(const Duration(days: 1));
 
   @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    _durationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('New Task'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel('TITLE'),
-              TextFormField(
-                controller: _titleController,
-                style: const TextStyle(color: Colors.white),
-                decoration: _inputDecoration('e.g., Design Flowra UI'),
-                validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-              ),
-              const SizedBox(height: 24),
-              _buildLabel('DESCRIPTION'),
-              TextFormField(
-                controller: _descController,
-                style: const TextStyle(color: Colors.white),
-                maxLines: 3,
-                decoration: _inputDecoration('What needs to be done?'),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('DURATION'),
-                        TextFormField(
-                          controller: _durationController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: _inputDecoration('1h 30m'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('PRIORITY'),
-                        DropdownButtonFormField<int>(
-                          initialValue: _priority,
-                          dropdownColor: AppColors.surface,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: _inputDecoration(''),
-                          items: [1, 2, 3].map((p) {
-                            return DropdownMenuItem(
-                              value: p,
-                              child: Text(p == 1 ? 'High' : p == 2 ? 'Medium' : 'Low'),
-                            );
-                          }).toList(),
-                          onChanged: (v) => setState(() => _priority = v!),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              _buildLabel('DEADLINE'),
-              InkWell(
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _deadline,
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (picked != null) setState(() => _deadline = picked);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${_deadline.day}/${_deadline.month}/${_deadline.year}',
-                        style: const TextStyle(color: Colors.white),
+    return BlocListener<TaskBloc, TaskState>(
+      listener: (context, state) {
+        if (state is TaskOperationSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: Colors.green),
+          );
+          Navigator.pop(context);
+        } else if (state is TaskError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('New Task'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel('TITLE'),
+                TextFormField(
+                  controller: _titleController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDecoration('e.g., Design Flowra UI'),
+                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                ),
+                const SizedBox(height: 24),
+                _buildLabel('DESCRIPTION'),
+                TextFormField(
+                  controller: _descController,
+                  style: const TextStyle(color: Colors.white),
+                  maxLines: 3,
+                  decoration: _inputDecoration('What needs to be done?'),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('DURATION'),
+                          TextFormField(
+                            controller: _durationController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: _inputDecoration('1h 30m'),
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return 'Required';
+                              final reg = RegExp(r'^(\d+h)?\s*(\d+m)?$');
+                              final trimmed = v.trim();
+                              if (!reg.hasMatch(trimmed) || trimmed.isEmpty) {
+                                return 'Invalid format (e.g. 1h 30m)';
+                              }
+                              if (!trimmed.contains(RegExp(r'\d'))) {
+                                return 'Invalid format (e.g. 1h 30m)';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
                       ),
-                      const Icon(Icons.calendar_today, color: AppColors.secondary, size: 20),
-                    ],
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel('PRIORITY'),
+                          DropdownButtonFormField<int>(
+                            initialValue: _priority,
+                            dropdownColor: AppColors.surface,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: _inputDecoration(''),
+                            items: [1, 2, 3].map((p) {
+                              return DropdownMenuItem(
+                                value: p,
+                                child: Text(p == 1 ? 'High' : (p == 2 ? 'Medium' : 'Low')),
+                              );
+                            }).toList(),
+                            onChanged: (v) => setState(() => _priority = v!),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _buildLabel('DEADLINE'),
+                InkWell(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: _deadline,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      if (!mounted) return;
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.fromDateTime(_deadline),
+                      );
+                      if (time != null) {
+                        setState(() {
+                          _deadline = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            time.hour,
+                            time.minute,
+                          );
+                        });
+                      }
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${_deadline.day}/${_deadline.month}/${_deadline.year} ${_deadline.hour.toString().padLeft(2, '0')}:${_deadline.minute.toString().padLeft(2, '0')}',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        const Icon(Icons.calendar_today, color: AppColors.secondary, size: 20),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Deep Work / Hard Task', style: TextStyle(color: Colors.white, fontSize: 16)),
-                  Switch(
-                    value: _isHard,
-                    activeTrackColor: AppColors.secondary,
-                    onChanged: (v) => setState(() => _isHard = v),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 48),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: _roundedRectangleCircular(16),
-                  ),
-                  child: const Text('Create Task', style: TextStyle(fontSize: 18, color: Colors.white)),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Deep Work / Hard Task', style: TextStyle(color: Colors.white, fontSize: 16)),
+                    Switch(
+                      value: _isHard,
+                      activeTrackColor: AppColors.secondary,
+                      onChanged: (v) => setState(() => _isHard = v),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 48),
+                BlocBuilder<TaskBloc, TaskState>(
+                  builder: (context, state) {
+                    final isLoading = state is TaskLoading;
+                    return SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : _submit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: _roundedRectangleCircular(16),
+                        ),
+                        child: isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Create Task', style: TextStyle(fontSize: 18, color: Colors.white)),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -201,7 +260,6 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
         deadline: _deadline,
       );
       context.read<TaskBloc>().add(CreateTaskEvent(task));
-      Navigator.pop(context);
     }
   }
 

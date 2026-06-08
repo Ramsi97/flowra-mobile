@@ -12,11 +12,14 @@ class AuthRemoteDatasource {
     final body = await apiClient.post(
       Endpoints.login,
       {'email': email, 'password': password},
+      auth: false, // no token yet during login
     );
 
     // Save token securely
     final token = body['token'] as String;
     await apiClient.saveToken(token);
+    final userJsonStr = json.encode(body['user']);
+    await apiClient.saveUser(userJsonStr);
     return body as Map<String, dynamic>;
   }
 
@@ -28,7 +31,7 @@ class AuthRemoteDatasource {
       'gender': user.gender,
     };
 
-    await apiClient.post(Endpoints.register, payload);
+    await apiClient.post(Endpoints.register, payload, auth: false); // no token yet during registration
   }
 
   Future<void> logout() async {
@@ -37,10 +40,19 @@ class AuthRemoteDatasource {
       await apiClient.postProtected(Endpoints.logout);
     } catch (_) {}
     await apiClient.deleteToken();
+    await apiClient.deleteUser();
   }
 
   Future<bool> hasToken() async {
     final token = await apiClient.getToken();
     return token != null;
+  }
+
+  Future<UserModel?> getUser() async {
+    final userJsonStr = await apiClient.getUser();
+    if (userJsonStr != null) {
+      return UserModel.fromJson(json.decode(userJsonStr) as Map<String, dynamic>);
+    }
+    return null;
   }
 }

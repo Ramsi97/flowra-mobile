@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../task/domain/entities/task.dart';
+import '../../../task/presentation/pages/task_detail_page.dart';
 
 class DailyFlowTile extends StatelessWidget {
   final Task task;
@@ -45,11 +46,17 @@ class DailyFlowTile extends StatelessWidget {
             width: 12,
             height: 12,
             decoration: BoxDecoration(
-              color: task.status == 'done' ? AppColors.success : AppColors.primary,
+              color: task.status == 'done'
+                  ? AppColors.success
+                  : AppColors.primary,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: (task.status == 'done' ? AppColors.success : AppColors.primary).withOpacity(0.5),
+                  color:
+                      (task.status == 'done'
+                              ? AppColors.success
+                              : AppColors.primary)
+                          .withOpacity(0.5),
                   blurRadius: 8,
                   spreadRadius: 2,
                 ),
@@ -71,61 +78,70 @@ class DailyFlowTile extends StatelessWidget {
   Widget _buildTaskCard(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: GlassContainer(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  task.title,
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => TaskDetailPage(task: task)),
+          );
+        },
+        child: GlassContainer(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    task.title,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(context),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    task.duration,
+                    style: TextStyle(
+                      color: AppColors.getTextSecondary(context),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                task.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.getTextSecondary(context),
+                  fontSize: 13,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getPriorityColor().withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _getPriorityColor().withOpacity(0.3),
+                  ),
+                ),
+                child: Text(
+                  _getPriorityLabel(),
                   style: TextStyle(
-                    color: AppColors.getTextPrimary(context),
-                    fontSize: 16,
+                    color: _getPriorityColor(),
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  task.duration,
-                  style: TextStyle(
-                    color: AppColors.getTextSecondary(context),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              task.description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: AppColors.getTextSecondary(context),
-                fontSize: 13,
               ),
-            ),
-
-
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _getPriorityColor().withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _getPriorityColor().withOpacity(0.3)),
-              ),
-              child: Text(
-                _getPriorityLabel(),
-                style: TextStyle(
-                  color: _getPriorityColor(),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

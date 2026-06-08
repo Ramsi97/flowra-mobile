@@ -1,7 +1,7 @@
 class Endpoints {
   // Use 10.0.2.2 for Android emulator pointing to localhost.
   // Use your computer's local IP (e.g. 192.168.x.x) if running on a physical device.
-  static const String baseUrl = 'http://10.86.138.231:8080';
+  static const String baseUrl = 'https://unorderly-nannette-preadequately.ngrok-free.dev';
 
   // Auth
   static const String login = '/auth/login';

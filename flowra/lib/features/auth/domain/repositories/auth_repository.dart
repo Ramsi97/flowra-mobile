@@ -7,4 +7,5 @@ abstract class AuthRepository {
   Future<Either<Failure, AuthResponse>> login(String email, String password);
   Future<Either<Failure, void>> register(User user, String password);
   Future<Either<Failure, void>> logout();
+  Future<Either<Failure, AuthResponse>> checkAuth();
 }

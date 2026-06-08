@@ -45,7 +45,7 @@ class TaskModel extends Task {
       'priority': priority,
       'is_hard': isHard,
       'status': status,
-      'deadline': deadline?.toIso8601String(),
+      'deadline': deadline?.toUtc().toIso8601String(),
     };
   }
 

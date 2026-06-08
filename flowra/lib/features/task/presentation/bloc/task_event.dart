@@ -41,3 +41,28 @@ class ChangeViewModeEvent extends TaskEvent {
   @override
   List<Object?> get props => [viewMode];
 }
+
+class SuggestTasksEvent extends TaskEvent {
+  final String description;
+  SuggestTasksEvent(this.description);
+
+  @override
+  List<Object?> get props => [description];
+}
+
+class RefineTasksEvent extends TaskEvent {
+  final List<Task> drafts;
+  final String instruction;
+  RefineTasksEvent(this.drafts, this.instruction);
+
+  @override
+  List<Object?> get props => [drafts, instruction];
+}
+
+class AcceptSuggestionsEvent extends TaskEvent {
+  final List<Task> suggestions;
+  AcceptSuggestionsEvent(this.suggestions);
+
+  @override
+  List<Object?> get props => [suggestions];
+}

@@ -54,14 +54,7 @@ class FlowraApp extends StatelessWidget {
               ),
               useMaterial3: true,
             ),
-            home: BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                if (state is AuthAuthenticated) {
-                  return const HomePage();
-                }
-                return const LoginPage();
-              },
-            ),
+            home: const _AuthGate(),
           );
         },
       ),
@@ -69,3 +62,36 @@ class FlowraApp extends StatelessWidget {
   }
 }
 
+class _AuthGate extends StatefulWidget {
+  const _AuthGate();
+
+  @override
+  State<_AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<_AuthGate> {
+  @override
+  void initState() {
+    super.initState();
+    // Fire once on startup to restore any saved session from secure storage.
+    context.read<AuthBloc>().add(CheckAuthRequested());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        if (state is AuthAuthenticated) {
+          return const HomePage();
+        }
+        if (state is AuthInitial || state is AuthLoading) {
+          // Show a brief spinner while we check for a stored token.
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return const LoginPage();
+      },
+    );
+  }
+}

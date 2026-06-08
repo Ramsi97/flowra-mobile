@@ -4,12 +4,14 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../task/presentation/bloc/task_bloc.dart';
 import '../../../task/presentation/bloc/task_event.dart';
 import '../../../task/presentation/bloc/task_state.dart';
+import '../../../task/domain/entities/task.dart';
 import '../widgets/daily_flow_tile.dart';
 import '../widgets/daily_goal_header.dart';
 import '../../../task/presentation/pages/create_task_page.dart';
 import '../../../settings/presentation/bloc/theme_bloc.dart';
 import '../../../settings/presentation/bloc/theme_event.dart';
 import '../../../settings/presentation/bloc/theme_state.dart';
+import '../../../task/presentation/pages/task_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -143,17 +145,48 @@ class _HomePageState extends State<HomePage> {
   Widget _buildDashboard() {
     return BlocBuilder<TaskBloc, TaskState>(
       builder: (context, state) {
-        if (state is TaskLoading) {
+        // During a mutation (create/update/delete), TaskLoading carries the
+        // preserved list so we can keep the dashboard visible.
+        if (state is TaskLoading && state.preservedTasks == null) {
+          // Initial load — nothing to show yet.
           return const Center(child: CircularProgressIndicator());
-        } else if (state is TasksLoaded) {
-          final now = DateTime.now();
-          final filteredTasks = state.tasks.where((t) {
+        }
+
+        // Resolve the task list from whichever state has one.
+        final List<Task> resolvedTasks;
+        final TaskViewMode resolvedMode;
+        final bool isMutating;
+
+        if (state is TasksLoaded) {
+          resolvedTasks = state.tasks;
+          resolvedMode = state.viewMode;
+          isMutating = false;
+        } else if (state is TaskLoading && state.preservedTasks != null) {
+          resolvedTasks = state.preservedTasks!;
+          resolvedMode = state.viewMode;
+          isMutating = true;
+        } else if (state is TaskOperationSuccess) {
+          // Transient state before TasksLoaded is emitted — show spinner.
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is TaskError) {
+          return Center(child: Text(state.message, style: const TextStyle(color: Colors.red)));
+        } else {
+          return const SizedBox();
+        }
+
+        final now = DateTime.now();
+        final filteredTasks = resolvedTasks.where((t) {
             if (t.deadline == null) return true;
-            if (state.viewMode == TaskViewMode.day) {
-              return t.deadline!.day == now.day && t.deadline!.month == now.month && t.deadline!.year == now.year;
-            } else if (state.viewMode == TaskViewMode.week) {
+            final deadline = t.deadline!;
+            final startOfToday = DateTime(now.year, now.month, now.day);
+            
+            if (resolvedMode == TaskViewMode.day) {
+              return deadline.year == now.year && 
+                     deadline.month == now.month && 
+                     deadline.day == now.day;
+            } else if (resolvedMode == TaskViewMode.week) {
               final weekFromNow = now.add(const Duration(days: 7));
-              return t.deadline!.isBefore(weekFromNow);
+              return deadline.isBefore(weekFromNow) && !deadline.isBefore(startOfToday);
             }
             return true; // Month/All for now
           }).toList();
@@ -161,7 +194,7 @@ class _HomePageState extends State<HomePage> {
           final completedCount = filteredTasks.where((t) => t.status == 'done').length;
           final percentage = filteredTasks.isEmpty ? 0.0 : completedCount / filteredTasks.length;
 
-          return CustomScrollView(
+          final scrollView = CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
@@ -169,13 +202,13 @@ class _HomePageState extends State<HomePage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: TaskViewMode.values.map((mode) {
-                      final isSelected = state.viewMode == mode;
+                      final isSelected = resolvedMode == mode;
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4.0),
                         child: ChoiceChip(
                           label: Text(mode.name.toUpperCase()),
                           selected: isSelected,
-                          onSelected: (_) => context.read<TaskBloc>().add(ChangeViewModeEvent(mode)),
+                          onSelected: isMutating ? null : (_) => context.read<TaskBloc>().add(ChangeViewModeEvent(mode)),
                           selectedColor: AppColors.secondary,
                           backgroundColor: AppColors.getSurface(context),
                           labelStyle: TextStyle(
@@ -252,10 +285,17 @@ class _HomePageState extends State<HomePage> {
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           );
-        } else if (state is TaskError) {
-          return Center(child: Text(state.message, style: const TextStyle(color: Colors.red)));
-        }
-        return const SizedBox();
+
+          // During a mutation, show an overlay spinner so the list stays visible.
+          if (isMutating) {
+            return Stack(
+              children: [
+                scrollView,
+                const Center(child: CircularProgressIndicator()),
+              ],
+            );
+          }
+          return scrollView;
       },
     );
   }
@@ -263,28 +303,81 @@ class _HomePageState extends State<HomePage> {
   Widget _buildTaskList() {
     return BlocBuilder<TaskBloc, TaskState>(
       builder: (context, state) {
+        // Resolve task list — either loaded or preserved during a mutation.
+        List<Task>? tasks;
+        bool isMutating = false;
+
         if (state is TasksLoaded) {
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: state.tasks.length,
-            itemBuilder: (context, index) {
-              final task = state.tasks[index];
-              return Card(
-                color: AppColors.getSurface(context),
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  title: Text(task.title, style: TextStyle(color: AppColors.getTextPrimary(context))),
-                  subtitle: Text(task.description, style: TextStyle(color: AppColors.getTextSecondary(context))),
-                  trailing: Icon(
-                    Icons.circle,
-                    color: task.priority == 1 ? Colors.red : task.priority == 2 ? Colors.orange : Colors.green,
-                  ),
+          tasks = state.tasks;
+        } else if (state is TaskLoading && state.preservedTasks != null) {
+          tasks = state.preservedTasks;
+          isMutating = true;
+        } else if (state is TaskError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 16),
+                Text(state.message, style: const TextStyle(color: Colors.white70)),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => context.read<TaskBloc>().add(LoadTasksEvent()),
+                  child: const Text('Retry'),
                 ),
-              );
-            },
+              ],
+            ),
           );
         }
-        return const Center(child: CircularProgressIndicator());
+
+        if (tasks == null) {
+          // Initial load with no data yet.
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (tasks.isEmpty) {
+          return const Center(
+            child: Text('No tasks found.', style: TextStyle(color: Colors.white70)),
+          );
+        }
+
+        final listView = ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: tasks.length,
+          itemBuilder: (context, index) {
+            final task = tasks![index];
+            return Card(
+              color: AppColors.getSurface(context),
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TaskDetailPage(task: task),
+                    ),
+                  );
+                },
+                title: Text(task.title, style: TextStyle(color: AppColors.getTextPrimary(context))),
+                subtitle: Text(task.description, style: TextStyle(color: AppColors.getTextSecondary(context))),
+                trailing: Icon(
+                  Icons.circle,
+                  color: task.priority == 1 ? Colors.red : task.priority == 2 ? Colors.orange : Colors.green,
+                ),
+              ),
+            );
+          },
+        );
+
+        if (isMutating) {
+          return Stack(
+            children: [
+              listView,
+              const Center(child: CircularProgressIndicator()),
+            ],
+          );
+        }
+        return listView;
       },
     );
   }

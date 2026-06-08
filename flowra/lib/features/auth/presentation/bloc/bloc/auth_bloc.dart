@@ -4,6 +4,7 @@ import '../../../domain/entities/user.dart';
 import '../../../domain/usecase/login_usecase.dart';
 import '../../../domain/usecase/register_usecase.dart';
 import '../../../domain/usecase/logout_usecase.dart';
+import '../../../domain/usecase/check_auth_usecase.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -12,15 +13,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase loginUseCase;
   final RegisterUseCase registerUseCase;
   final LogoutUseCase logoutUseCase;
+  final CheckAuthUseCase checkAuthUseCase;
 
   AuthBloc({
     required this.loginUseCase,
     required this.registerUseCase,
     required this.logoutUseCase,
+    required this.checkAuthUseCase,
   }) : super(AuthInitial()) {
     on<LoginRequested>(_onLoginRequested);
     on<RegisterRequested>(_onRegisterRequested);
     on<LogoutRequested>(_onLogoutRequested);
+    on<CheckAuthRequested>(_onCheckAuthRequested);
   }
 
   Future<void> _onLoginRequested(
@@ -65,6 +69,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     result.fold(
       (failure) => emit(AuthError(failure.message)),
       (_) => emit(AuthUnauthenticated()),
+    );
+  }
+
+  Future<void> _onCheckAuthRequested(
+    CheckAuthRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    final result = await checkAuthUseCase();
+    result.fold(
+      (failure) => emit(AuthUnauthenticated()),
+      (authResponse) => emit(AuthAuthenticated(
+        user: authResponse.user,
+        token: authResponse.token,
+      )),
     );
   }
 }
