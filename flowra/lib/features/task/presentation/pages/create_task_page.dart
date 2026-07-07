@@ -46,10 +46,11 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.getBackground(context),
         appBar: AppBar(
           title: const Text('New Task'),
           backgroundColor: Colors.transparent,
+          foregroundColor: AppColors.getTextPrimary(context),
           elevation: 0,
         ),
         body: SingleChildScrollView(
@@ -62,7 +63,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 _buildLabel('TITLE'),
                 TextFormField(
                   controller: _titleController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: AppColors.getTextPrimary(context)),
                   decoration: _inputDecoration('e.g., Design Flowra UI'),
                   validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
                 ),
@@ -70,7 +71,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 _buildLabel('DESCRIPTION'),
                 TextFormField(
                   controller: _descController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: AppColors.getTextPrimary(context)),
                   maxLines: 3,
                   decoration: _inputDecoration('What needs to be done?'),
                 ),
@@ -84,7 +85,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                           _buildLabel('DURATION'),
                           TextFormField(
                             controller: _durationController,
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: AppColors.getTextPrimary(context)),
                             decoration: _inputDecoration('1h 30m'),
                             validator: (v) {
                               if (v == null || v.trim().isEmpty) return 'Required';
@@ -110,8 +111,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                           _buildLabel('PRIORITY'),
                           DropdownButtonFormField<int>(
                             initialValue: _priority,
-                            dropdownColor: AppColors.surface,
-                            style: const TextStyle(color: Colors.white),
+                            dropdownColor: AppColors.getSurface(context),
+                            style: TextStyle(color: AppColors.getTextPrimary(context)),
                             decoration: _inputDecoration(''),
                             items: [1, 2, 3].map((p) {
                               return DropdownMenuItem(
@@ -158,16 +159,16 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: AppColors.getSurface(context),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(color: _borderColor),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           '${_deadline.day}/${_deadline.month}/${_deadline.year} ${_deadline.hour.toString().padLeft(2, '0')}:${_deadline.minute.toString().padLeft(2, '0')}',
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: AppColors.getTextPrimary(context)),
                         ),
                         const Icon(Icons.calendar_today, color: AppColors.secondary, size: 20),
                       ],
@@ -178,7 +179,9 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Deep Work / Hard Task', style: TextStyle(color: Colors.white, fontSize: 16)),
+                    Text('Deep Work / Hard Task',
+                        style: TextStyle(
+                            color: AppColors.getTextPrimary(context), fontSize: 16)),
                     Switch(
                       value: _isHard,
                       activeTrackColor: AppColors.secondary,
@@ -214,13 +217,18 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
     );
   }
 
+  Color get _borderColor =>
+      Theme.of(context).brightness == Brightness.dark
+          ? Colors.white10
+          : Colors.grey.shade300;
+
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
         text,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.5),
+          color: AppColors.getTextSecondary(context),
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
@@ -232,16 +240,16 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.white24),
+      hintStyle: TextStyle(color: AppColors.getTextSecondary(context).withOpacity(0.6)),
       filled: true,
-      fillColor: AppColors.surface,
+      fillColor: AppColors.getSurface(context),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.white10),
+        borderSide: BorderSide(color: _borderColor),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.white10),
+        borderSide: BorderSide(color: _borderColor),
       ),
     );
   }

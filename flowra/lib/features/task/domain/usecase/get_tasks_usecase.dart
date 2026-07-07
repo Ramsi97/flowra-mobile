@@ -7,5 +7,6 @@ class GetTasksUseCase {
   final TaskRepository repository;
   GetTasksUseCase(this.repository);
 
-  Future<Either<Failure, List<Task>>> call() => repository.getTasks();
+  Future<Either<Failure, List<Task>>> call({bool forceRefresh = false}) =>
+      repository.getTasks(forceRefresh: forceRefresh);
 }

@@ -8,6 +8,9 @@ import 'package:flowra/features/home/presentation/pages/home_page.dart';
 import 'package:flowra/features/task/presentation/bloc/task_bloc.dart';
 import 'package:flowra/features/settings/presentation/bloc/theme_bloc.dart';
 import 'package:flowra/features/settings/presentation/bloc/theme_state.dart';
+import 'package:flowra/features/schedule/presentation/bloc/schedule_bloc.dart';
+import 'package:flowra/features/focus/presentation/bloc/focus_bloc.dart';
+import 'package:flowra/features/home/presentation/pages/splash_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +28,8 @@ class FlowraApp extends StatelessWidget {
         BlocProvider(create: (_) => di.sl<AuthBloc>()),
         BlocProvider(create: (_) => di.sl<TaskBloc>()),
         BlocProvider(create: (_) => di.sl<ThemeBloc>()),
+        BlocProvider(create: (_) => di.sl<ScheduleBloc>()),
+        BlocProvider(create: (_) => di.sl<FocusBloc>()),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(
         builder: (context, themeState) {
@@ -70,6 +75,8 @@ class _AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<_AuthGate> {
+  bool _splashFinished = false;
+
   @override
   void initState() {
     super.initState();
@@ -81,14 +88,22 @@ class _AuthGateState extends State<_AuthGate> {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
+        if (!_splashFinished) {
+          return SplashPage(
+            onSplashComplete: () {
+              setState(() {
+                _splashFinished = true;
+              });
+            },
+          );
+        }
+
         if (state is AuthAuthenticated) {
           return const HomePage();
         }
         if (state is AuthInitial || state is AuthLoading) {
-          // Show a brief spinner while we check for a stored token.
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          // If authorization check is slow, remain on SplashPage
+          return SplashPage(onSplashComplete: () {});
         }
         return const LoginPage();
       },

@@ -7,7 +7,13 @@ abstract class TaskEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class LoadTasksEvent extends TaskEvent {}
+class LoadTasksEvent extends TaskEvent {
+  final bool forceRefresh;
+  LoadTasksEvent({this.forceRefresh = false});
+
+  @override
+  List<Object?> get props => [forceRefresh];
+}
 
 class CreateTaskEvent extends TaskEvent {
   final Task task;

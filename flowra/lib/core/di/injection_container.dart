@@ -19,12 +19,41 @@ import 'package:flowra/features/task/domain/usecase/suggest_tasks_usecase.dart';
 import 'package:flowra/features/task/domain/usecase/refine_tasks_usecase.dart';
 import 'package:flowra/features/task/presentation/bloc/task_bloc.dart';
 import 'package:flowra/features/settings/presentation/bloc/theme_bloc.dart';
+import 'package:flowra/features/task/data/datasources/task_local_datasource.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Schedule Feature Imports
+import 'package:flowra/features/schedule/data/datasources/schedule_remote_datasource.dart';
+import 'package:flowra/features/schedule/data/repositories/schedule_repository_impl.dart';
+import 'package:flowra/features/schedule/domain/repositories/schedule_repository.dart';
+import 'package:flowra/features/schedule/domain/usecase/generate_schedule_usecase.dart';
+import 'package:flowra/features/schedule/domain/usecase/regenerate_schedule_usecase.dart';
+import 'package:flowra/features/schedule/domain/usecase/update_schedule_item_usecase.dart';
+import 'package:flowra/features/schedule/domain/usecase/delete_schedule_item_usecase.dart';
+import 'package:flowra/features/schedule/domain/usecase/clear_day_usecase.dart';
+import 'package:flowra/features/schedule/domain/usecase/clear_week_usecase.dart';
+import 'package:flowra/features/schedule/domain/usecase/clear_month_usecase.dart';
+import 'package:flowra/features/schedule/domain/usecase/fix_schedule_usecase.dart';
+import 'package:flowra/features/schedule/domain/usecase/ai_schedule_usecase.dart';
+import 'package:flowra/features/schedule/presentation/bloc/schedule_bloc.dart';
+
+// Focus Feature Imports
+import 'package:flowra/features/focus/data/datasources/focus_remote_datasource.dart';
+import 'package:flowra/features/focus/data/repositories/focus_repository_impl.dart';
+import 'package:flowra/features/focus/domain/repositories/focus_repository.dart';
+import 'package:flowra/features/focus/domain/usecase/get_focus_status_usecase.dart';
+import 'package:flowra/features/focus/domain/usecase/update_focus_config_usecase.dart';
+import 'package:flowra/features/focus/presentation/bloc/focus_bloc.dart';
 
 final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
   // ── Core ──────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<ApiClient>(() => ApiClient());
+
+  // SharedPreferences (must be awaited before use)
+  final prefs = await SharedPreferences.getInstance();
+  sl.registerSingleton<SharedPreferences>(prefs);
 
   // ── Auth – Data ───────────────────────────────────────────────────────────
   sl.registerLazySingleton<AuthRemoteDatasource>(
@@ -40,8 +69,33 @@ Future<void> initDependencies() async {
     () => TaskRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
   );
 
+  sl.registerLazySingleton<TaskLocalDataSource>(
+    () => TaskLocalDataSourceImpl(prefs: sl<SharedPreferences>()),
+  );
+
   sl.registerLazySingleton<TaskRepository>(
-    () => TaskRepositoryImpl(remoteDataSource: sl<TaskRemoteDataSource>()),
+    () => TaskRepositoryImpl(
+      remoteDataSource: sl<TaskRemoteDataSource>(),
+      localDataSource: sl<TaskLocalDataSource>(),
+    ),
+  );
+
+  // ── Schedule – Data ───────────────────────────────────────────────────────
+  sl.registerLazySingleton<ScheduleRemoteDataSource>(
+    () => ScheduleRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+  );
+
+  sl.registerLazySingleton<ScheduleRepository>(
+    () => ScheduleRepositoryImpl(remoteDataSource: sl<ScheduleRemoteDataSource>()),
+  );
+
+  // ── Focus – Data ──────────────────────────────────────────────────────────
+  sl.registerLazySingleton<FocusRemoteDataSource>(
+    () => FocusRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+  );
+
+  sl.registerLazySingleton<FocusRepository>(
+    () => FocusRepositoryImpl(remoteDataSource: sl<FocusRemoteDataSource>()),
   );
 
   // ── Task – Use Cases ─────────────────────────────────────────────────────
@@ -51,6 +105,21 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => DeleteTaskUseCase(sl<TaskRepository>()));
   sl.registerLazySingleton(() => SuggestTasksUseCase(sl<TaskRepository>()));
   sl.registerLazySingleton(() => RefineTasksUseCase(sl<TaskRepository>()));
+
+  // ── Schedule – Use Cases ──────────────────────────────────────────────────
+  sl.registerLazySingleton(() => GenerateScheduleUseCase(sl<ScheduleRepository>()));
+  sl.registerLazySingleton(() => RegenerateScheduleUseCase(sl<ScheduleRepository>()));
+  sl.registerLazySingleton(() => UpdateScheduleItemUseCase(sl<ScheduleRepository>()));
+  sl.registerLazySingleton(() => DeleteScheduleItemUseCase(sl<ScheduleRepository>()));
+  sl.registerLazySingleton(() => ClearDayUseCase(sl<ScheduleRepository>()));
+  sl.registerLazySingleton(() => ClearWeekUseCase(sl<ScheduleRepository>()));
+  sl.registerLazySingleton(() => ClearMonthUseCase(sl<ScheduleRepository>()));
+  sl.registerLazySingleton(() => FixScheduleUseCase(sl<ScheduleRepository>()));
+  sl.registerLazySingleton(() => AIScheduleUseCase(sl<ScheduleRepository>()));
+
+  // ── Focus – Use Cases ─────────────────────────────────────────────────────
+  sl.registerLazySingleton(() => GetFocusStatusUseCase(sl<FocusRepository>()));
+  sl.registerLazySingleton(() => UpdateFocusConfigUseCase(sl<FocusRepository>()));
 
   // ── Auth – Use Cases ─────────────────────────────────────────────────────
   sl.registerFactory(() => LoginUseCase(sl<AuthRepository>()));
@@ -74,6 +143,25 @@ Future<void> initDependencies() async {
         deleteTaskUseCase: sl<DeleteTaskUseCase>(),
         suggestTasksUseCase: sl<SuggestTasksUseCase>(),
         refineTasksUseCase: sl<RefineTasksUseCase>(),
+      ));
+
+  // ── Schedule – BLoC ───────────────────────────────────────────────────────
+  sl.registerLazySingleton(() => ScheduleBloc(
+        generateScheduleUseCase: sl<GenerateScheduleUseCase>(),
+        regenerateScheduleUseCase: sl<RegenerateScheduleUseCase>(),
+        updateScheduleItemUseCase: sl<UpdateScheduleItemUseCase>(),
+        deleteScheduleItemUseCase: sl<DeleteScheduleItemUseCase>(),
+        clearDayUseCase: sl<ClearDayUseCase>(),
+        clearWeekUseCase: sl<ClearWeekUseCase>(),
+        clearMonthUseCase: sl<ClearMonthUseCase>(),
+        fixScheduleUseCase: sl<FixScheduleUseCase>(),
+        aiScheduleUseCase: sl<AIScheduleUseCase>(),
+      ));
+
+  // ── Focus – BLoC ──────────────────────────────────────────────────────────
+  sl.registerLazySingleton(() => FocusBloc(
+        getFocusStatusUseCase: sl<GetFocusStatusUseCase>(),
+        updateFocusConfigUseCase: sl<UpdateFocusConfigUseCase>(),
       ));
 
   // ── Settings – BLoC ──────────────────────────────────────────────────────

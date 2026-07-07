@@ -1,5 +1,5 @@
 import 'package:bloc/bloc.dart';
-import 'package:dartz/dartz.dart' hide Task;
+
 import '../../domain/usecase/get_tasks_usecase.dart';
 import '../../domain/usecase/create_task_usecase.dart';
 import '../../domain/usecase/update_task_usecase.dart';
@@ -8,6 +8,7 @@ import '../../domain/usecase/suggest_tasks_usecase.dart';
 import '../../domain/usecase/refine_tasks_usecase.dart';
 import 'task_event.dart';
 import 'task_state.dart';
+import '../../domain/entities/task.dart';
 
 class TaskBloc extends Bloc<TaskEvent, TaskState> {
   final GetTasksUseCase getTasksUseCase;
@@ -50,11 +51,15 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   }
 
   Future<void> _onLoadTasks(LoadTasksEvent event, Emitter<TaskState> emit) async {
-    emit(TaskLoading(viewMode: _currentViewMode));
-    final result = await getTasksUseCase();
+    final preserved = _currentTasks;
+    final mode = _currentViewMode;
+    if (preserved == null) {
+      emit(TaskLoading(viewMode: mode));
+    }
+    final result = await getTasksUseCase(forceRefresh: event.forceRefresh);
     result.fold(
       (failure) => emit(TaskError(failure.toString())),
-      (tasks) => emit(TasksLoaded(tasks, viewMode: _currentViewMode)),
+      (tasks) => emit(TasksLoaded(tasks, viewMode: mode)),
     );
   }
 
@@ -80,27 +85,55 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         emit(TaskError(failure.toString()));
       },
       (task) {
-        emit(TaskOperationSuccess('Task created successfully'));
+        emit(TaskOperationSuccess('Task created successfully', preservedTasks: preserved?.cast(), viewMode: mode));
         add(LoadTasksEvent());
       },
     );
   }
 
   Future<void> _onUpdateTask(UpdateTaskEvent event, Emitter<TaskState> emit) async {
-    final preserved = _currentTasks;
+    final preserved = _currentTasks?.cast<Task>();
     final mode = _currentViewMode;
-    emit(TaskLoading(preservedTasks: preserved?.cast(), viewMode: mode));
+    
+    String successMessage = 'Task updated';
+    if (event.updates.containsKey('status')) {
+      successMessage = event.updates['status'] == 'done' 
+          ? 'Task marked as done' 
+          : 'Task marked as pending';
+    }
+
+    if (preserved != null) {
+      final newTasks = List<Task>.from(preserved);
+      final index = newTasks.indexWhere((t) => t.id == event.id);
+      if (index != -1) {
+        final currentTask = newTasks[index];
+        newTasks[index] = currentTask.copyWith(
+          status: event.updates['status'] as String?,
+          title: event.updates['title'] as String?,
+          description: event.updates['description'] as String?,
+        );
+        emit(TasksLoaded(newTasks, viewMode: mode));
+      }
+    }
+
     final result = await updateTaskUseCase(event.id, event.updates);
     result.fold(
       (failure) {
         if (preserved != null) {
-          emit(TasksLoaded(preserved.cast(), viewMode: mode));
+          emit(TasksLoaded(preserved, viewMode: mode));
         }
         emit(TaskError(failure.toString()));
       },
       (task) {
-        emit(TaskOperationSuccess('Task updated'));
-        add(LoadTasksEvent());
+        if (preserved != null) {
+           final List<Task> finalTasks = List<Task>.from(preserved);
+           final index = finalTasks.indexWhere((Task t) => t.id == event.id);
+           if (index != -1) {
+             finalTasks[index] = task;
+           }
+           emit(TasksLoaded(finalTasks, viewMode: mode));
+        }
+        emit(TaskOperationSuccess(successMessage, preservedTasks: _currentTasks?.cast(), viewMode: mode));
       },
     );
   }
@@ -118,7 +151,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
         emit(TaskError(failure.toString()));
       },
       (_) {
-        emit(TaskOperationSuccess('Task deleted'));
+        emit(TaskOperationSuccess('Task deleted', preservedTasks: preserved?.cast(), viewMode: mode));
         add(LoadTasksEvent());
       },
     );
@@ -152,7 +185,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     }
 
     if (anySuccess) {
-      emit(TaskOperationSuccess('Tasks accepted and created'));
+      emit(TaskOperationSuccess('Tasks accepted and created', preservedTasks: _currentTasks?.cast(), viewMode: _currentViewMode));
       add(LoadTasksEvent());
     } else {
       emit(TaskError('Failed to accept tasks'));

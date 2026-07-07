@@ -12,6 +12,11 @@ import '../../../settings/presentation/bloc/theme_bloc.dart';
 import '../../../settings/presentation/bloc/theme_event.dart';
 import '../../../settings/presentation/bloc/theme_state.dart';
 import '../../../task/presentation/pages/task_detail_page.dart';
+import '../../../auth/presentation/bloc/bloc/auth_bloc.dart';
+import '../../../task/presentation/widgets/task_list_card.dart';
+import '../../../task/presentation/pages/ai_assistant_sheet.dart';
+import '../../../schedule/presentation/pages/schedule_page.dart';
+import '../../../focus/presentation/pages/focus_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -26,30 +31,55 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    context.read<TaskBloc>().add(LoadTasksEvent());
+    context.read<TaskBloc>().add(LoadTasksEvent(forceRefresh: true));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.getBackground(context),
-      body: SafeArea(
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            _buildDashboard(),
-            _buildTaskList(),
-            const Center(child: Text('Calendar View', style: TextStyle(color: Colors.white, fontSize: 24))),
-            _buildSettings(),
-          ],
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is AuthUnauthenticated) {
+              // the _AuthGate at the root will automatically show LoginPage.
+            }
+          },
         ),
+        BlocListener<TaskBloc, TaskState>(
+          listener: (context, state) {
+            if (state is TaskOperationSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  duration: const Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+        ),
+      ],
+      child: Scaffold(
+        backgroundColor: AppColors.getBackground(context),
+        body: SafeArea(
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: [
+              _buildDashboard(),
+              _buildTaskList(),
+              const SchedulePage(),
+              const FocusPage(),
+              _buildSettings(),
+            ],
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        floatingActionButton: _fabForIndex(),
+        bottomNavigationBar: _buildBottomNav(),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: _selectedIndex == 1 ? _buildAddButton() : _buildAIButton(),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
-
+  
   Widget _buildSettings() {
     return BlocBuilder<ThemeBloc, ThemeState>(
       builder: (context, state) {
@@ -59,15 +89,26 @@ class _HomePageState extends State<HomePage> {
         return ListView(
           padding: const EdgeInsets.all(20),
           children: [
-             Padding(
-              padding: const EdgeInsets.only(bottom: 32.0, top: 16),
-              child: Text(
-                'Settings',
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24.0, top: 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Icon(Icons.arrow_back, color: textColor),
+                    onPressed: () => setState(() => _selectedIndex = 0),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Settings',
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
             _buildSettingTile(
@@ -81,6 +122,17 @@ class _HomePageState extends State<HomePage> {
               ),
               textColor: textColor,
             ),
+            _buildSettingTile(
+              icon: Icons.logout,
+              title: 'Log Out',
+              subtitle: 'Sign out of your account',
+              trailing: IconButton(
+                icon: const Icon(Icons.arrow_forward_ios, size: 16),
+                onPressed: () => context.read<AuthBloc>().add(LogoutRequested()),
+              ),
+              textColor: AppColors.error,
+              onTap: () => context.read<AuthBloc>().add(LogoutRequested()),
+            ),
           ],
         );
       },
@@ -93,6 +145,7 @@ class _HomePageState extends State<HomePage> {
     required String subtitle,
     required Widget trailing,
     required Color textColor,
+    VoidCallback? onTap,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -129,6 +182,7 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(color: textColor.withOpacity(0.6), fontSize: 13),
         ),
         trailing: trailing,
+        onTap: onTap,
       ),
     );
   }
@@ -165,9 +219,10 @@ class _HomePageState extends State<HomePage> {
           resolvedTasks = state.preservedTasks!;
           resolvedMode = state.viewMode;
           isMutating = true;
-        } else if (state is TaskOperationSuccess) {
-          // Transient state before TasksLoaded is emitted — show spinner.
-          return const Center(child: CircularProgressIndicator());
+        } else if (state is TaskOperationSuccess && state.preservedTasks != null) {
+          resolvedTasks = state.preservedTasks!;
+          resolvedMode = state.viewMode;
+          isMutating = true;
         } else if (state is TaskError) {
           return Center(child: Text(state.message, style: const TextStyle(color: Colors.red)));
         } else {
@@ -196,44 +251,32 @@ class _HomePageState extends State<HomePage> {
 
           final scrollView = CustomScrollView(
             slivers: [
+
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                  padding: const EdgeInsets.only(bottom: 24.0),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: TaskViewMode.values.map((mode) {
-                      final isSelected = resolvedMode == mode;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                        child: ChoiceChip(
-                          label: Text(mode.name.toUpperCase()),
-                          selected: isSelected,
-                          onSelected: isMutating ? null : (_) => context.read<TaskBloc>().add(ChangeViewModeEvent(mode)),
-                          selectedColor: AppColors.secondary,
-                          backgroundColor: AppColors.getSurface(context),
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : AppColors.getTextSecondary(context),
+                    children: [
+                      const SizedBox(width: 40),
+                      Expanded(
+                        child: Text(
+                          'Flowra',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.getTextPrimary(context),
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            fontSize: 10,
+                            letterSpacing: 1.2,
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: 32.0),
-                  child: Text(
-                    'Flowra',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.getTextPrimary(context),
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.settings_outlined,
+                            color: AppColors.getTextSecondary(context)),
+                        tooltip: 'Settings',
+                        onPressed: () => setState(() => _selectedIndex = 4),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -291,7 +334,10 @@ class _HomePageState extends State<HomePage> {
             return Stack(
               children: [
                 scrollView,
-                const Center(child: CircularProgressIndicator()),
+                Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
               ],
             );
           }
@@ -310,6 +356,9 @@ class _HomePageState extends State<HomePage> {
         if (state is TasksLoaded) {
           tasks = state.tasks;
         } else if (state is TaskLoading && state.preservedTasks != null) {
+          tasks = state.preservedTasks;
+          isMutating = true;
+        } else if (state is TaskOperationSuccess && state.preservedTasks != null) {
           tasks = state.preservedTasks;
           isMutating = true;
         } else if (state is TaskError) {
@@ -341,39 +390,65 @@ class _HomePageState extends State<HomePage> {
           );
         }
 
-        final listView = ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: tasks.length,
-          itemBuilder: (context, index) {
-            final task = tasks![index];
-            return Card(
-              color: AppColors.getSurface(context),
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => TaskDetailPage(task: task),
+        final pendingCount = tasks.where((t) => t.status != 'done').length;
+
+        final listView = Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'To Do',
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(context),
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  Text(
+                    '$pendingCount pending',
+                    style: TextStyle(
+                      color: AppColors.secondary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: tasks.length,
+                itemBuilder: (context, index) {
+                  final task = tasks![index];
+                  return TaskListCard(
+                    task: task,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TaskDetailPage(task: task),
+                        ),
+                      );
+                    },
                   );
                 },
-                title: Text(task.title, style: TextStyle(color: AppColors.getTextPrimary(context))),
-                subtitle: Text(task.description, style: TextStyle(color: AppColors.getTextSecondary(context))),
-                trailing: Icon(
-                  Icons.circle,
-                  color: task.priority == 1 ? Colors.red : task.priority == 2 ? Colors.orange : Colors.green,
-                ),
               ),
-            );
-          },
+            ),
+          ],
         );
 
         if (isMutating) {
           return Stack(
             children: [
               listView,
-              const Center(child: CircularProgressIndicator()),
+              Container(
+                color: Colors.black.withOpacity(0.3),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
             ],
           );
         }
@@ -382,13 +457,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget? _fabForIndex() {
+    // No FAB on the Settings pane (index 4).
+    if (_selectedIndex == 4) return null;
+    if (_selectedIndex == 1) return _buildAddButton();
+    return _buildAIButton();
+  }
+
   Widget _buildAIButton() {
     return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('AI Assistant coming soon!')),
-        );
-      },
+      onTap: () => showAiAssistantSheet(context),
       child: Container(
         width: 64,
         height: 64,
@@ -422,7 +500,7 @@ class _HomePageState extends State<HomePage> {
             _navItem(Icons.list, 1),
             const SizedBox(width: 48), // Space for FAB
             _navItem(Icons.calendar_month, 2),
-            _navItem(Icons.settings, 3),
+            _navItem(Icons.self_improvement, 3),
           ],
         ),
       ),

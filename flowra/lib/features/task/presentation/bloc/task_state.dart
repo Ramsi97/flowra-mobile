@@ -34,10 +34,12 @@ class TasksLoaded extends TaskState {
 /// Emitted after create / update / delete succeeds before reloading the list.
 class TaskOperationSuccess extends TaskState {
   final String message;
-  TaskOperationSuccess(this.message);
+  final List<Task>? preservedTasks;
+  final TaskViewMode viewMode;
+  TaskOperationSuccess(this.message, {this.preservedTasks, this.viewMode = TaskViewMode.day});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, preservedTasks, viewMode];
 }
 
 /// Emitted after AI suggest/refine returns results.
