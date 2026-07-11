@@ -54,6 +54,33 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, User>> updateProfile(
+    User user, {
+    String? imagePath,
+  }) async {
+    try {
+      final model = UserModel(
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        gender: user.gender,
+        profilePictureUrl: user.profilePictureUrl,
+        restDays: user.restDays,
+        workDayStart: user.workDayStart,
+        workDayEnd: user.workDayEnd,
+        blockedApps: user.blockedApps,
+        focusModeEnabled: user.focusModeEnabled,
+        createdAt: user.createdAt,
+      );
+      final updated =
+          await remoteDatasource.updateProfile(model, imagePath: imagePath);
+      return Right(updated);
+    } catch (e) {
+      return Left(ServerFailure(e.toString().replaceFirst('Exception: ', '')));
+    }
+  }
+
+  @override
   Future<Either<Failure, AuthResponse>> checkAuth() async {
     try {
       final hasToken = await remoteDatasource.hasToken();

@@ -88,12 +88,22 @@ class _AuthGateState extends State<_AuthGate> {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        if (!_splashFinished) {
+        // The splash is a one-time, launch-only screen. It stays up until BOTH
+        // its animation has finished AND the initial session restore has
+        // resolved. Crucially we only treat the *very first* AuthLoading (the
+        // startup CheckAuthRequested, while still on AuthInitial-era) as
+        // "restoring". Once we've left the splash, subsequent AuthLoading
+        // states — e.g. during login — must NOT bring the splash back; the
+        // LoginPage shows its own inline button spinner instead.
+        final restoringSession = !_splashFinished &&
+            (state is AuthInitial || state is AuthLoading);
+
+        if (!_splashFinished || restoringSession) {
           return SplashPage(
             onSplashComplete: () {
-              setState(() {
-                _splashFinished = true;
-              });
+              if (!_splashFinished) {
+                setState(() => _splashFinished = true);
+              }
             },
           );
         }
@@ -101,10 +111,8 @@ class _AuthGateState extends State<_AuthGate> {
         if (state is AuthAuthenticated) {
           return const HomePage();
         }
-        if (state is AuthInitial || state is AuthLoading) {
-          // If authorization check is slow, remain on SplashPage
-          return SplashPage(onSplashComplete: () {});
-        }
+        // Unauthenticated, error, registered, or a post-splash loading state
+        // all resolve to the login surface.
         return const LoginPage();
       },
     );

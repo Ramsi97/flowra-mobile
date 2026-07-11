@@ -17,6 +17,7 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     on<ToggleFocusModeEvent>(_onToggle);
     on<AddBlockedAppEvent>(_onAddApp);
     on<RemoveBlockedAppEvent>(_onRemoveApp);
+    on<SetBlockedAppsEvent>(_onSetApps);
   }
 
   FocusStatus? get _current {
@@ -58,6 +59,28 @@ class FocusBloc extends Bloc<FocusEvent, FocusState> {
     final app = event.app.trim();
     if (base == null || app.isEmpty || base.blockedApps.contains(app)) return;
     final updated = [...base.blockedApps, app];
+    emit(FocusLoaded(base.copyWith(blockedApps: updated)));
+    final result = await updateFocusConfigUseCase(blockedApps: updated);
+    result.fold(
+      (failure) {
+        emit(FocusLoaded(base));
+        emit(FocusError(failure.message, preserved: base));
+      },
+      (_) {},
+    );
+  }
+
+  Future<void> _onSetApps(SetBlockedAppsEvent event, Emitter<FocusState> emit) async {
+    final base = _current;
+    if (base == null) return;
+    // De-dupe while preserving order.
+    final seen = <String>{};
+    final updated = <String>[];
+    for (final app in event.apps) {
+      final trimmed = app.trim();
+      if (trimmed.isEmpty || !seen.add(trimmed.toLowerCase())) continue;
+      updated.add(trimmed);
+    }
     emit(FocusLoaded(base.copyWith(blockedApps: updated)));
     final result = await updateFocusConfigUseCase(blockedApps: updated);
     result.fold(

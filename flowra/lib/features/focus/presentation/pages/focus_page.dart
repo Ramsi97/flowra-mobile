@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_picker_sheet.dart';
 import '../../domain/entities/focus_status.dart';
 import '../bloc/focus_bloc.dart';
 import '../bloc/focus_event.dart';
@@ -307,40 +308,43 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
               ),
             ),
             TextButton.icon(
-              onPressed: _showAddAppDialog,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add'),
+              onPressed: () => _openAppPicker(status),
+              icon: const Icon(Icons.playlist_add_check, size: 18),
+              label: const Text('Choose'),
             ),
           ],
         ),
         const SizedBox(height: 8),
         if (status.blockedApps.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
-            decoration: BoxDecoration(
-              color: AppColors.getSurface(context),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white10
-                    : Colors.grey.shade200,
-              ),
-            ),
-            child: Column(
-              children: [
-                Icon(Icons.apps,
-                    color: AppColors.getTextSecondary(context), size: 32),
-                const SizedBox(height: 8),
-                Text(
-                  'No apps blocked yet.\nAdd the ones that pull you off task.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.getTextSecondary(context),
-                    height: 1.4,
-                  ),
+          GestureDetector(
+            onTap: () => _openAppPicker(status),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppColors.getSurface(context),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white10
+                      : Colors.grey.shade200,
                 ),
-              ],
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.apps,
+                      color: AppColors.getTextSecondary(context), size: 32),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No apps blocked yet.\nTap to choose the ones that pull you off task.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.getTextSecondary(context),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
             ),
           )
         else
@@ -365,39 +369,14 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
     );
   }
 
-  void _showAddAppDialog() {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Block an app'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            hintText: 'e.g., Instagram, YouTube',
-          ),
-          onSubmitted: (_) => _submitApp(dialogContext, controller.text),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => _submitApp(dialogContext, controller.text),
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+  Future<void> _openAppPicker(FocusStatus status) async {
+    final bloc = context.read<FocusBloc>();
+    final result = await showAppPickerSheet(
+      context,
+      selected: status.blockedApps,
     );
-  }
-
-  void _submitApp(BuildContext dialogContext, String value) {
-    final app = value.trim();
-    if (app.isEmpty) return;
-    context.read<FocusBloc>().add(AddBlockedAppEvent(app));
-    Navigator.pop(dialogContext);
+    if (result != null) {
+      bloc.add(SetBlockedAppsEvent(result));
+    }
   }
 }

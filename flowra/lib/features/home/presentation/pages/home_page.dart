@@ -13,10 +13,14 @@ import '../../../settings/presentation/bloc/theme_event.dart';
 import '../../../settings/presentation/bloc/theme_state.dart';
 import '../../../task/presentation/pages/task_detail_page.dart';
 import '../../../auth/presentation/bloc/bloc/auth_bloc.dart';
+import '../../../auth/presentation/pages/edit_profile_page.dart';
 import '../../../task/presentation/widgets/task_list_card.dart';
 import '../../../task/presentation/pages/ai_assistant_sheet.dart';
 import '../../../schedule/presentation/pages/schedule_page.dart';
 import '../../../focus/presentation/pages/focus_page.dart';
+import '../../../../core/widgets/app_loader.dart';
+import '../../../../core/widgets/error_view.dart';
+import '../../../../core/widgets/flowra_app_bar.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -111,6 +115,8 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
+            _buildProfileHeader(textColor),
+            const SizedBox(height: 8),
             _buildSettingTile(
               icon: isDark ? Icons.dark_mode : Icons.light_mode,
               title: 'Dark Mode',
@@ -134,6 +140,108 @@ class _HomePageState extends State<HomePage> {
               onTap: () => context.read<AuthBloc>().add(LogoutRequested()),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileHeader(Color textColor) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        final user = state is AuthAuthenticated ? state.user : null;
+        final hasAvatar =
+            user != null && user.profilePictureUrl.isNotEmpty;
+        final initial = (user != null && user.fullName.trim().isNotEmpty)
+            ? user.fullName.trim()[0].toUpperCase()
+            : '?';
+
+        return GestureDetector(
+          onTap: user == null
+              ? null
+              : () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider.value(
+                        value: context.read<AuthBloc>(),
+                        child: EditProfilePage(user: user),
+                      ),
+                    ),
+                  ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.2),
+                    border: Border.all(color: Colors.white54, width: 1.5),
+                    image: hasAvatar
+                        ? DecorationImage(
+                            image: NetworkImage(user.profilePictureUrl),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: hasAvatar
+                      ? null
+                      : Text(
+                          initial,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.fullName.isNotEmpty == true
+                            ? user!.fullName
+                            : 'Your Profile',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        user?.email ?? 'Tap to edit your profile',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.85),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.white70),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -203,7 +311,7 @@ class _HomePageState extends State<HomePage> {
         // preserved list so we can keep the dashboard visible.
         if (state is TaskLoading && state.preservedTasks == null) {
           // Initial load — nothing to show yet.
-          return const Center(child: CircularProgressIndicator());
+          return const AppLoader(message: 'Loading your flow…');
         }
 
         // Resolve the task list from whichever state has one.
@@ -224,7 +332,12 @@ class _HomePageState extends State<HomePage> {
           resolvedMode = state.viewMode;
           isMutating = true;
         } else if (state is TaskError) {
-          return Center(child: Text(state.message, style: const TextStyle(color: Colors.red)));
+          return ErrorView(
+            message: state.message,
+            onRetry: () => context
+                .read<TaskBloc>()
+                .add(LoadTasksEvent(forceRefresh: true)),
+          );
         } else {
           return const SizedBox();
         }
@@ -253,31 +366,17 @@ class _HomePageState extends State<HomePage> {
             slivers: [
 
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 24.0),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 40),
-                      Expanded(
-                        child: Text(
-                          'Flowra',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.getTextPrimary(context),
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.settings_outlined,
-                            color: AppColors.getTextSecondary(context)),
-                        tooltip: 'Settings',
-                        onPressed: () => setState(() => _selectedIndex = 4),
-                      ),
-                    ],
-                  ),
+                child: BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, authState) {
+                    final user = authState is AuthAuthenticated
+                        ? authState.user
+                        : null;
+                    return FlowraAppBar(
+                      avatarUrl: user?.profilePictureUrl,
+                      userName: user?.fullName,
+                      onProfileTap: () => setState(() => _selectedIndex = 4),
+                    );
+                  },
                 ),
               ),
               SliverToBoxAdapter(
@@ -334,10 +433,7 @@ class _HomePageState extends State<HomePage> {
             return Stack(
               children: [
                 scrollView,
-                Container(
-                  color: Colors.black.withOpacity(0.3),
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
+                const AppLoaderOverlay(),
               ],
             );
           }
@@ -362,31 +458,23 @@ class _HomePageState extends State<HomePage> {
           tasks = state.preservedTasks;
           isMutating = true;
         } else if (state is TaskError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                const SizedBox(height: 16),
-                Text(state.message, style: const TextStyle(color: Colors.white70)),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => context.read<TaskBloc>().add(LoadTasksEvent()),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+          return ErrorView(
+            message: state.message,
+            onRetry: () => context.read<TaskBloc>().add(LoadTasksEvent()),
           );
         }
 
         if (tasks == null) {
           // Initial load with no data yet.
-          return const Center(child: CircularProgressIndicator());
+          return const AppLoader(message: 'Loading tasks…');
         }
 
         if (tasks.isEmpty) {
-          return const Center(
-            child: Text('No tasks found.', style: TextStyle(color: Colors.white70)),
+          return Center(
+            child: Text(
+              'No tasks found.',
+              style: TextStyle(color: AppColors.getTextSecondary(context)),
+            ),
           );
         }
 
@@ -445,10 +533,7 @@ class _HomePageState extends State<HomePage> {
           return Stack(
             children: [
               listView,
-              Container(
-                color: Colors.black.withOpacity(0.3),
-                child: const Center(child: CircularProgressIndicator()),
-              ),
+              const AppLoaderOverlay(),
             ],
           );
         }

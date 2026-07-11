@@ -158,4 +158,46 @@ class ApiClient {
       ),
     );
   }
+
+  /// Sends a multipart/form-data request, used for endpoints that may include a
+  /// file upload (e.g. the profile picture). [fields] values are stringified;
+  /// list values are sent as repeated fields so the Go backend's form binding
+  /// receives a slice. [filePath], when provided, is attached under
+  /// [fileField].
+  Future<dynamic> multipart(
+    String path, {
+    String method = 'PUT',
+    Map<String, dynamic> fields = const {},
+    String? filePath,
+    String fileField = 'profile_picture',
+    bool auth = true,
+  }) async {
+    return _wrapRequest(() async {
+      final request = http.MultipartRequest(method, _uri(path));
+
+      final headers = await _headers(auth: auth);
+      // Let MultipartRequest set its own multipart Content-Type/boundary.
+      headers.remove('Content-Type');
+      request.headers.addAll(headers);
+
+      fields.forEach((key, value) {
+        if (value == null) return;
+        if (value is Iterable) {
+          for (final item in value) {
+            request.files.add(http.MultipartFile.fromString(key, '$item'));
+          }
+        } else {
+          request.fields[key] = '$value';
+        }
+      });
+
+      if (filePath != null && filePath.isNotEmpty) {
+        request.files
+            .add(await http.MultipartFile.fromPath(fileField, filePath));
+      }
+
+      final streamed = await request.send();
+      return http.Response.fromStream(streamed);
+    });
+  }
 }

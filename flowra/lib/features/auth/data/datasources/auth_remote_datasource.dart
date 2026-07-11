@@ -23,6 +23,35 @@ class AuthRemoteDatasource {
     return body as Map<String, dynamic>;
   }
 
+  /// Updates the profile via PUT /auth/profile (multipart so an optional
+  /// avatar can be uploaded). Persists the merged user locally and returns it.
+  Future<UserModel> updateProfile(UserModel user, {String? imagePath}) async {
+    final fields = <String, dynamic>{
+      'full_name': user.fullName,
+      'email': user.email,
+      'gender': user.gender,
+      'work_day_start': user.workDayStart,
+      'work_day_end': user.workDayEnd,
+      'rest_days': user.restDays.map((e) => e.toString()).toList(),
+      'blocked_apps': user.blockedApps,
+      'focus_mode_enabled': user.focusModeEnabled.toString(),
+    };
+
+    await apiClient.multipart(
+      Endpoints.updateProfile,
+      method: 'PUT',
+      fields: fields,
+      filePath: imagePath,
+    );
+
+    // The endpoint returns only a success message, so persist the model we sent
+    // (server-side avatar URL, if any, is refreshed on next login/checkAuth).
+    // toJson() omits the id, so re-add it to keep the cached session intact.
+    final persisted = user.toJson()..['id'] = user.id;
+    await apiClient.saveUser(json.encode(persisted));
+    return user;
+  }
+
   Future<void> register(UserModel user, String password) async {
     final payload = {
       'full_name': user.fullName,

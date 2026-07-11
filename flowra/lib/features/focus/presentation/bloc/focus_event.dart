@@ -30,3 +30,11 @@ class RemoveBlockedAppEvent extends FocusEvent {
   @override
   List<Object?> get props => [app];
 }
+
+/// Replaces the entire blocked-apps list in one shot (used by the app picker).
+class SetBlockedAppsEvent extends FocusEvent {
+  final List<String> apps;
+  const SetBlockedAppsEvent(this.apps);
+  @override
+  List<Object?> get props => [apps];
+}

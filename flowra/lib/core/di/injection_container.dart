@@ -6,7 +6,9 @@ import '../../features/auth/domain/usecase/login_usecase.dart';
 import '../../features/auth/domain/usecase/register_usecase.dart';
 import '../../features/auth/domain/usecase/logout_usecase.dart';
 import '../../features/auth/domain/usecase/check_auth_usecase.dart';
+import '../../features/auth/domain/usecase/update_profile_usecase.dart';
 import '../../features/auth/presentation/bloc/bloc/auth_bloc.dart';
+import '../../features/auth/presentation/bloc/profile/profile_bloc.dart';
 import '../network/api_client.dart';
 import 'package:flowra/features/task/data/datasources/task_remote_datasource.dart';
 import 'package:flowra/features/task/data/repositories/task_repository_impl.dart';
@@ -126,6 +128,7 @@ Future<void> initDependencies() async {
   sl.registerFactory(() => RegisterUseCase(sl<AuthRepository>()));
   sl.registerFactory(() => LogoutUseCase(sl<AuthRepository>()));
   sl.registerFactory(() => CheckAuthUseCase(sl<AuthRepository>()));
+  sl.registerFactory(() => UpdateProfileUseCase(sl<AuthRepository>()));
 
   // ── Auth – BLoC ──────────────────────────────────────────────────────────
   sl.registerFactory(() => AuthBloc(
@@ -133,6 +136,10 @@ Future<void> initDependencies() async {
         registerUseCase: sl<RegisterUseCase>(),
         logoutUseCase: sl<LogoutUseCase>(),
         checkAuthUseCase: sl<CheckAuthUseCase>(),
+      ));
+
+  sl.registerFactory(() => ProfileBloc(
+        updateProfileUseCase: sl<UpdateProfileUseCase>(),
       ));
 
   // ── Task – BLoC ──────────────────────────────────────────────────────────

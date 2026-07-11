@@ -25,3 +25,10 @@ final class RegisterRequested extends AuthEvent {
 final class LogoutRequested extends AuthEvent {}
 
 final class CheckAuthRequested extends AuthEvent {}
+
+/// Refreshes the authenticated user in-place after a profile edit, without
+/// re-hitting the network or changing the authenticated/unauthenticated state.
+final class ProfileUpdated extends AuthEvent {
+  final User user;
+  ProfileUpdated(this.user);
+}
