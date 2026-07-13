@@ -85,7 +85,13 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final hasToken = await remoteDatasource.hasToken();
       if (!hasToken) return const Left(ServerFailure('No cached token'));
-      
+
+      // A restorable session must also have a refresh token; without one an
+      // expired access token can never be renewed, so treat it as logged out
+      // rather than opening the app onto guaranteed 401s.
+      final hasRefreshToken = await remoteDatasource.hasRefreshToken();
+      if (!hasRefreshToken) return const Left(ServerFailure('No refresh token'));
+
       final token = await remoteDatasource.apiClient.getToken();
       final user = await remoteDatasource.getUser();
       if (token != null && user != null) {

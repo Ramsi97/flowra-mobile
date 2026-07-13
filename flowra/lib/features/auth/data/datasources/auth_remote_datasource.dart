@@ -15,9 +15,13 @@ class AuthRemoteDatasource {
       auth: false, // no token yet during login
     );
 
-    // Save token securely
+    // Save tokens securely
     final token = body['token'] as String;
     await apiClient.saveToken(token);
+    final refreshToken = body['refresh_token'] as String?;
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      await apiClient.saveRefreshToken(refreshToken);
+    }
     final userJsonStr = json.encode(body['user']);
     await apiClient.saveUser(userJsonStr);
     return body as Map<String, dynamic>;
@@ -69,12 +73,18 @@ class AuthRemoteDatasource {
       await apiClient.postProtected(Endpoints.logout);
     } catch (_) {}
     await apiClient.deleteToken();
+    await apiClient.deleteRefreshToken();
     await apiClient.deleteUser();
   }
 
   Future<bool> hasToken() async {
     final token = await apiClient.getToken();
     return token != null;
+  }
+
+  Future<bool> hasRefreshToken() async {
+    final token = await apiClient.getRefreshToken();
+    return token != null && token.isNotEmpty;
   }
 
   Future<UserModel?> getUser() async {

@@ -18,7 +18,14 @@ Future<void> showAiAssistantSheet(BuildContext context) {
       value: taskBloc,
       child: const _AiAssistantSheet(),
     ),
-  );
+  ).whenComplete(() {
+    // The shared TaskBloc may be left in a suggestions/loading state when the
+    // sheet is dismissed without accepting. Reload so the home list always
+    // returns to a resolved state instead of a stuck spinner.
+    if (taskBloc.state is! TasksLoaded) {
+      taskBloc.add(LoadTasksEvent());
+    }
+  });
 }
 
 class _AiAssistantSheet extends StatefulWidget {

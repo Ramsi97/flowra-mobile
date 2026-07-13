@@ -56,8 +56,16 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
 
   Future<void> _onLoad(LoadScheduleEvent event, Emitter<ScheduleState> emit) async {
     final preserved = _currentItems;
+    // Parse before emitting loading so a malformed date can't strand the
+    // spinner with no terminal state.
+    final String dateStr;
+    try {
+      dateStr = _dateToString(DateTime.parse(event.date));
+    } catch (_) {
+      emit(ScheduleError('Invalid date: ${event.date}', preservedItems: preserved));
+      return;
+    }
     if (preserved == null) emit(const ScheduleLoading());
-    final dateStr = _dateToString(DateTime.parse(event.date));
     final result = await generateScheduleUseCase(dateStr);
     result.fold(
       (failure) => emit(ScheduleError(failure.toString(), preservedItems: preserved)),

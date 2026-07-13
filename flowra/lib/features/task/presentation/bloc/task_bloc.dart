@@ -132,6 +132,10 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
              finalTasks[index] = task;
            }
            emit(TasksLoaded(finalTasks, viewMode: mode));
+        } else {
+          // No list was loaded yet, so there's nothing to preserve. Pull the
+          // list so the UI resolves to a real state instead of a stuck spinner.
+          add(LoadTasksEvent());
         }
         emit(TaskOperationSuccess(successMessage, preservedTasks: _currentTasks?.cast(), viewMode: mode));
       },

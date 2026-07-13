@@ -32,6 +32,38 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
+  // Last known task list + view mode. The shared TaskBloc can pass through
+  // states that carry no list (e.g. TaskSuggestionsLoaded from the AI sheet,
+  // or a mutation with a null preserved list). Caching the last resolved list
+  // lets the builders keep rendering it instead of getting stuck on a spinner
+  // or blanking out.
+  List<Task>? _lastTasks;
+  TaskViewMode _lastMode = TaskViewMode.day;
+
+  /// Resolves the task list + mode to render for the current [state], updating
+  /// the cache when the state carries a list. Returns null tasks only when we
+  /// have genuinely never loaded a list yet (true first load).
+  ({List<Task>? tasks, TaskViewMode mode, bool isMutating}) _resolveTaskView(
+      TaskState state) {
+    if (state is TasksLoaded) {
+      _lastTasks = state.tasks;
+      _lastMode = state.viewMode;
+      return (tasks: state.tasks, mode: state.viewMode, isMutating: false);
+    }
+    if (state is TaskLoading && state.preservedTasks != null) {
+      _lastTasks = state.preservedTasks;
+      _lastMode = state.viewMode;
+      return (tasks: state.preservedTasks, mode: state.viewMode, isMutating: true);
+    }
+    if (state is TaskOperationSuccess && state.preservedTasks != null) {
+      _lastTasks = state.preservedTasks;
+      _lastMode = state.viewMode;
+      return (tasks: state.preservedTasks, mode: state.viewMode, isMutating: true);
+    }
+    // Any other state: keep showing the last known list if we have one.
+    return (tasks: _lastTasks, mode: _lastMode, isMutating: false);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -307,40 +339,24 @@ class _HomePageState extends State<HomePage> {
   Widget _buildDashboard() {
     return BlocBuilder<TaskBloc, TaskState>(
       builder: (context, state) {
-        // During a mutation (create/update/delete), TaskLoading carries the
-        // preserved list so we can keep the dashboard visible.
-        if (state is TaskLoading && state.preservedTasks == null) {
-          // Initial load — nothing to show yet.
-          return const AppLoader(message: 'Loading your flow…');
-        }
-
-        // Resolve the task list from whichever state has one.
-        final List<Task> resolvedTasks;
-        final TaskViewMode resolvedMode;
-        final bool isMutating;
-
-        if (state is TasksLoaded) {
-          resolvedTasks = state.tasks;
-          resolvedMode = state.viewMode;
-          isMutating = false;
-        } else if (state is TaskLoading && state.preservedTasks != null) {
-          resolvedTasks = state.preservedTasks!;
-          resolvedMode = state.viewMode;
-          isMutating = true;
-        } else if (state is TaskOperationSuccess && state.preservedTasks != null) {
-          resolvedTasks = state.preservedTasks!;
-          resolvedMode = state.viewMode;
-          isMutating = true;
-        } else if (state is TaskError) {
+        if (state is TaskError && _lastTasks == null) {
           return ErrorView(
             message: state.message,
             onRetry: () => context
                 .read<TaskBloc>()
                 .add(LoadTasksEvent(forceRefresh: true)),
           );
-        } else {
-          return const SizedBox();
         }
+
+        final resolved = _resolveTaskView(state);
+        if (resolved.tasks == null) {
+          // True first load — nothing to show yet.
+          return const AppLoader(message: 'Loading your flow…');
+        }
+
+        final List<Task> resolvedTasks = resolved.tasks!;
+        final TaskViewMode resolvedMode = resolved.mode;
+        final bool isMutating = resolved.isMutating;
 
         final now = DateTime.now();
         final filteredTasks = resolvedTasks.where((t) {
@@ -445,27 +461,19 @@ class _HomePageState extends State<HomePage> {
   Widget _buildTaskList() {
     return BlocBuilder<TaskBloc, TaskState>(
       builder: (context, state) {
-        // Resolve task list — either loaded or preserved during a mutation.
-        List<Task>? tasks;
-        bool isMutating = false;
-
-        if (state is TasksLoaded) {
-          tasks = state.tasks;
-        } else if (state is TaskLoading && state.preservedTasks != null) {
-          tasks = state.preservedTasks;
-          isMutating = true;
-        } else if (state is TaskOperationSuccess && state.preservedTasks != null) {
-          tasks = state.preservedTasks;
-          isMutating = true;
-        } else if (state is TaskError) {
+        if (state is TaskError && _lastTasks == null) {
           return ErrorView(
             message: state.message,
             onRetry: () => context.read<TaskBloc>().add(LoadTasksEvent()),
           );
         }
 
+        final resolved = _resolveTaskView(state);
+        final List<Task>? tasks = resolved.tasks;
+        final bool isMutating = resolved.isMutating;
+
         if (tasks == null) {
-          // Initial load with no data yet.
+          // True first load with no data yet.
           return const AppLoader(message: 'Loading tasks…');
         }
 
@@ -511,7 +519,7 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: tasks.length,
                 itemBuilder: (context, index) {
-                  final task = tasks![index];
+                  final task = tasks[index];
                   return TaskListCard(
                     task: task,
                     onTap: () {

@@ -26,6 +26,11 @@ final class LogoutRequested extends AuthEvent {}
 
 final class CheckAuthRequested extends AuthEvent {}
 
+/// Dispatched by the network layer when the session can no longer be refreshed
+/// (refresh token missing/expired). Tokens are already cleared by the time this
+/// fires; the bloc just flips to unauthenticated so the app routes to login.
+final class SessionExpired extends AuthEvent {}
+
 /// Refreshes the authenticated user in-place after a profile edit, without
 /// re-hitting the network or changing the authenticated/unauthenticated state.
 final class ProfileUpdated extends AuthEvent {

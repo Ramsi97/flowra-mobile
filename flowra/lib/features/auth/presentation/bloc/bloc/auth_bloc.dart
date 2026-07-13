@@ -26,6 +26,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LogoutRequested>(_onLogoutRequested);
     on<CheckAuthRequested>(_onCheckAuthRequested);
     on<ProfileUpdated>(_onProfileUpdated);
+    on<SessionExpired>(_onSessionExpired);
+  }
+
+  void _onSessionExpired(SessionExpired event, Emitter<AuthState> emit) {
+    // The network layer has already cleared the stored tokens/user before
+    // firing this; only flip to unauthenticated if we aren't already.
+    if (state is! AuthUnauthenticated) {
+      emit(AuthUnauthenticated());
+    }
   }
 
   void _onProfileUpdated(ProfileUpdated event, Emitter<AuthState> emit) {

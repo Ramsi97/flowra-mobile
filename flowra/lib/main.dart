@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/di/injection_container.dart' as di;
+import 'core/network/api_client.dart';
 import 'core/theme/app_colors.dart';
 import 'package:flowra/features/auth/presentation/bloc/bloc/auth_bloc.dart';
 import 'package:flowra/features/auth/presentation/pages/login_page.dart';
@@ -80,6 +81,13 @@ class _AuthGateState extends State<_AuthGate> {
   @override
   void initState() {
     super.initState();
+    // When the network layer can't refresh an expired session, bounce the
+    // whole app back to login instead of leaving it on a dead, 401-ing screen.
+    di.sl<ApiClient>().onSessionExpired = () {
+      if (mounted) {
+        context.read<AuthBloc>().add(SessionExpired());
+      }
+    };
     // Fire once on startup to restore any saved session from secure storage.
     context.read<AuthBloc>().add(CheckAuthRequested());
   }

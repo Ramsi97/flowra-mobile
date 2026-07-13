@@ -33,6 +33,31 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
     super.dispose();
   }
 
+  /// Directly schedules an unscheduled task: pick a date, then a time, and set
+  /// the deadline (start is derived as deadline − duration elsewhere). Reuses
+  /// the same update flow as the edit sheet. On success the BlocListener shows
+  /// a confirmation and pops back to the list.
+  Future<void> _scheduleTask() async {
+    final initial = _task.deadline ?? DateTime.now().add(const Duration(hours: 1));
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null || !mounted) return;
+    final deadline =
+        DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    context.read<TaskBloc>().add(
+          UpdateTaskEvent(_task.id, {'deadline': deadline.toIso8601String()}),
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -228,32 +253,53 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
           color: cardColor,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.bolt, color: AppColors.warning, size: 22),
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.bolt, color: AppColors.warning, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Unscheduled',
+                        style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'This task has no time slot yet',
+                        style: TextStyle(color: textSecondary, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Unscheduled',
-                    style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'This task has no time slot yet',
-                    style: TextStyle(color: textSecondary, fontSize: 12),
-                  ),
-                ],
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 44,
+              child: ElevatedButton.icon(
+                onPressed: _scheduleTask,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.event_available_outlined, color: Colors.white, size: 18),
+                label: const Text(
+                  'Schedule',
+                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
           ],
