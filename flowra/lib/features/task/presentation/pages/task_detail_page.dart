@@ -54,7 +54,9 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
     final deadline =
         DateTime(date.year, date.month, date.day, time.hour, time.minute);
     context.read<TaskBloc>().add(
-          UpdateTaskEvent(_task.id, {'deadline': deadline.toIso8601String()}),
+          // Send UTC with a 'Z' suffix — the Go backend binds deadline as an
+          // RFC3339 time and rejects a bare local timestamp with a parse error.
+          UpdateTaskEvent(_task.id, {'deadline': deadline.toUtc().toIso8601String()}),
         );
   }
 
@@ -1102,7 +1104,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                               'duration': durationCtrl.text.trim(),
                               'priority': priority,
                               'is_hard': isHard,
-                              'deadline': hasDeadline ? deadline.toIso8601String() : null,
+                              'deadline': hasDeadline ? deadline.toUtc().toIso8601String() : null,
                             };
                             context.read<TaskBloc>().add(UpdateTaskEvent(_task.id, updates));
                           },
