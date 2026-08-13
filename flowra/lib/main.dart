@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/network/api_client.dart';
-import 'core/theme/app_colors.dart';
+import 'core/theme/app_theme.dart';
 import 'package:flowra/features/auth/presentation/bloc/bloc/auth_bloc.dart';
 import 'package:flowra/features/auth/presentation/pages/login_page.dart';
 import 'package:flowra/features/home/presentation/pages/home_page.dart';
@@ -38,28 +38,8 @@ class FlowraApp extends StatelessWidget {
             title: 'Flowra',
             debugShowCheckedModeBanner: false,
             themeMode: themeState.themeMode,
-            theme: ThemeData(
-              brightness: Brightness.light,
-              scaffoldBackgroundColor: AppColors.lightBackground,
-              fontFamily: 'Inter',
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: AppColors.primary,
-                brightness: Brightness.light,
-                surface: AppColors.lightSurface,
-              ),
-              useMaterial3: true,
-            ),
-            darkTheme: ThemeData(
-              brightness: Brightness.dark,
-              scaffoldBackgroundColor: AppColors.darkBackground,
-              fontFamily: 'Inter',
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: AppColors.primary,
-                brightness: Brightness.dark,
-                surface: AppColors.darkSurface,
-              ),
-              useMaterial3: true,
-            ),
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
             home: const _AuthGate(),
           );
         },

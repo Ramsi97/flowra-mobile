@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_picker_sheet.dart';
 import '../../domain/entities/focus_status.dart';
 import '../bloc/focus_bloc.dart';
@@ -16,6 +18,9 @@ class FocusPage extends StatefulWidget {
 }
 
 class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
+  /// Bottom clearance so scrolled content never hides behind the floating nav.
+  static const double _navClearance = 110;
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +49,7 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
     return Scaffold(
       backgroundColor: AppColors.getBackground(context),
       body: SafeArea(
+        bottom: false,
         child: BlocConsumer<FocusBloc, FocusState>(
           listener: (context, state) {
             if (state is FocusError) {
@@ -77,23 +83,26 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
               onRefresh: () async =>
                   context.read<FocusBloc>().add(const LoadFocusStatusEvent()),
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+                padding: const EdgeInsets.fromLTRB(
+                    AppDimens.xl, AppDimens.lg, AppDimens.xl, _navClearance),
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 20, top: 8),
+                    padding: const EdgeInsets.only(
+                        bottom: AppDimens.xl, top: AppDimens.sm),
                     child: Text(
                       'Focus',
                       style: TextStyle(
                         color: textColor,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),
                   _buildStatusCard(status),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppDimens.xxl),
                   _buildFocusToggle(status),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppDimens.xxl),
                   _buildBlockedApps(status, textColor),
                 ],
               ),
@@ -106,19 +115,28 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
 
   Widget _buildRetry() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.cloud_off, size: 48, color: AppColors.textSecondary),
-          const SizedBox(height: 16),
-          const Text("Couldn't load focus status."),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () =>
-                context.read<FocusBloc>().add(const LoadFocusStatusEvent()),
-            child: const Text('Retry'),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimens.xxl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_off_rounded,
+                size: 48, color: AppColors.getTextMuted(context)),
+            const SizedBox(height: AppDimens.lg),
+            Text(
+              "Couldn't load focus status.",
+              style: TextStyle(color: AppColors.getTextSecondary(context)),
+            ),
+            const SizedBox(height: AppDimens.lg),
+            AppButton(
+              label: 'Retry',
+              icon: Icons.refresh_rounded,
+              expand: false,
+              onPressed: () =>
+                  context.read<FocusBloc>().add(const LoadFocusStatusEvent()),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -130,13 +148,13 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
       final start = DateFormat('h:mm a').format(item.startTime.toLocal());
       final end = DateFormat('h:mm a').format(item.endTime.toLocal());
       return Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppDimens.xxl),
         decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(24),
+          gradient: AppColors.heroGradient,
+          borderRadius: BorderRadius.circular(AppDimens.radiusXl),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.35),
+              color: AppColors.primary.withValues(alpha: 0.35),
               blurRadius: 24,
               offset: const Offset(0, 10),
             ),
@@ -147,7 +165,7 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
           children: [
             Row(
               children: const [
-                Icon(Icons.bolt, color: Colors.white, size: 20),
+                Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
                 SizedBox(width: 6),
                 Text(
                   'IN FOCUS',
@@ -160,7 +178,7 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimens.lg),
             Text(
               item.title,
               style: const TextStyle(
@@ -169,10 +187,11 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppDimens.sm),
             Row(
               children: [
-                const Icon(Icons.access_time, color: Colors.white70, size: 16),
+                const Icon(Icons.access_time_rounded,
+                    color: Colors.white70, size: 16),
                 const SizedBox(width: 6),
                 Text(
                   '$start – $end',
@@ -190,33 +209,29 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
     final String subtitle = enabled
         ? "You're between scheduled blocks. Time to recharge."
         : 'Turn on focus mode to silence distractions during work sessions.';
+    final accent = enabled ? AppColors.secondary : AppColors.getTextMuted(context);
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppDimens.xl),
       decoration: BoxDecoration(
         color: AppColors.getSurface(context),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white10
-              : Colors.grey.shade200,
-        ),
+        borderRadius: BorderRadius.circular(AppDimens.radiusXl),
+        border: Border.all(color: AppColors.getBorder(context)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: (enabled ? AppColors.secondary : AppColors.textSecondary)
-                  .withOpacity(0.15),
+              color: accent.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              enabled ? Icons.self_improvement : Icons.nightlight_round,
-              color: enabled ? AppColors.secondary : AppColors.textSecondary,
+              enabled ? Icons.self_improvement_rounded : Icons.nightlight_round,
+              color: accent,
               size: 26,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppDimens.lg),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,7 +250,7 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
                   style: TextStyle(
                     color: AppColors.getTextSecondary(context),
                     fontSize: 13,
-                    height: 1.3,
+                    height: 1.35,
                   ),
                 ),
               ],
@@ -250,20 +265,21 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.getSurface(context),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+        border: Border.all(color: AppColors.getBorder(context)),
         boxShadow: [
           if (Theme.of(context).brightness == Brightness.light)
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: const Color(0xFF12131A).withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
             ),
         ],
       ),
       child: SwitchListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppDimens.xl, vertical: AppDimens.sm),
         value: status.focusModeEnabled,
-        activeColor: AppColors.secondary,
         title: Text(
           'Focus Mode',
           style: TextStyle(
@@ -279,12 +295,12 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
           ),
         ),
         secondary: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppDimens.sm),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            color: AppColors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppDimens.radiusSm),
           ),
-          child: const Icon(Icons.shield_moon, color: AppColors.primary),
+          child: const Icon(Icons.shield_moon_rounded, color: AppColors.primary),
         ),
         onChanged: (v) =>
             context.read<FocusBloc>().add(ToggleFocusModeEvent(v)),
@@ -304,37 +320,34 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
               style: TextStyle(
                 color: textColor,
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
               ),
             ),
             TextButton.icon(
               onPressed: () => _openAppPicker(status),
-              icon: const Icon(Icons.playlist_add_check, size: 18),
+              icon: const Icon(Icons.playlist_add_check_rounded, size: 18),
               label: const Text('Choose'),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppDimens.sm),
         if (status.blockedApps.isEmpty)
           GestureDetector(
             onTap: () => _openAppPicker(status),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+              padding: const EdgeInsets.symmetric(
+                  vertical: AppDimens.xxl, horizontal: AppDimens.lg),
               decoration: BoxDecoration(
                 color: AppColors.getSurface(context),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white10
-                      : Colors.grey.shade200,
-                ),
+                borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+                border: Border.all(color: AppColors.getBorder(context)),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.apps,
+                  Icon(Icons.apps_rounded,
                       color: AppColors.getTextSecondary(context), size: 32),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppDimens.sm),
                   Text(
                     'No apps blocked yet.\nTap to choose the ones that pull you off task.',
                     textAlign: TextAlign.center,
@@ -349,19 +362,19 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
           )
         else
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppDimens.sm,
+            runSpacing: AppDimens.sm,
             children: status.blockedApps.map((app) {
               return Chip(
                 label: Text(app),
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                side: BorderSide(
+                    color: AppColors.primary.withValues(alpha: 0.3)),
                 labelStyle: TextStyle(color: AppColors.getTextPrimary(context)),
-                deleteIcon: const Icon(Icons.close, size: 18),
+                deleteIcon: const Icon(Icons.close_rounded, size: 18),
                 deleteIconColor: AppColors.error,
-                onDeleted: () => context
-                    .read<FocusBloc>()
-                    .add(RemoveBlockedAppEvent(app)),
+                onDeleted: () =>
+                    context.read<FocusBloc>().add(RemoveBlockedAppEvent(app)),
               );
             }).toList(),
           ),

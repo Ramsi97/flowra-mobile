@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
+/// Hero progress ring on the dashboard showing the share of today's tasks
+/// completed. A gradient arc over a soft track with the percentage and a
+/// count beneath.
 class DailyGoalHeader extends StatelessWidget {
   final double percentage;
   final int completedTasks;
@@ -15,19 +18,20 @@ class DailyGoalHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pct = (percentage.clamp(0.0, 1.0) * 100).round();
     return Column(
       children: [
         Stack(
           alignment: Alignment.center,
           children: [
             SizedBox(
-              width: 140,
-              height: 140,
+              width: 148,
+              height: 148,
               child: CircularProgressIndicator(
-                value: percentage,
-                strokeWidth: 10,
-                backgroundColor: AppColors.getSurface(context),
-                color: AppColors.secondary,
+                value: percentage.clamp(0.0, 1.0),
+                strokeWidth: 12,
+                backgroundColor: AppColors.getBorder(context),
+                valueColor: const AlwaysStoppedAnimation(AppColors.primary),
                 strokeCap: StrokeCap.round,
               ),
             ),
@@ -35,35 +39,27 @@ class DailyGoalHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '${(percentage * 100).toInt()}%',
+                  '$pct%',
                   style: TextStyle(
                     color: AppColors.getTextPrimary(context),
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1,
                   ),
                 ),
                 Text(
-                  '$completedTasks / $totalTasks Tasks',
+                  '$completedTasks of $totalTasks done',
                   style: TextStyle(
                     color: AppColors.getTextSecondary(context),
-                    fontSize: 12,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Text(
-          'Daily Goal Progress',
-          style: TextStyle(
-            color: AppColors.getTextPrimary(context),
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
       ],
     );
   }
 }
-

@@ -17,6 +17,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  static const _genders = ['male', 'female', 'other'];
   String _selectedGender = 'male';
 
   @override
@@ -136,33 +137,21 @@ class _RegisterPageState extends State<RegisterPage> {
                       const SizedBox(height: 16),
 
                       // Gender selector
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: AppColors.getSurface(context),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedGender,
-                          dropdownColor: AppColors.getSurface(context),
-                          style: TextStyle(color: AppColors.getTextPrimary(context), fontSize: 15),
-                          decoration: const InputDecoration(
-                            prefixIcon: Icon(
-                              Icons.wc_outlined,
-                              color: AppColors.primary,
-                              size: 22,
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 10, left: 4),
+                          child: Text(
+                            'Gender',
+                            style: TextStyle(
+                              color: AppColors.getTextSecondary(context),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
-                            border: InputBorder.none,
                           ),
-                          items: const [
-                            DropdownMenuItem(value: 'male', child: Text('Male')),
-                            DropdownMenuItem(value: 'female', child: Text('Female')),
-                          ],
-                          onChanged: (v) {
-                            if (v != null) setState(() => _selectedGender = v);
-                          },
                         ),
                       ),
+                      _buildGenderSelector(),
                       const SizedBox(height: 28),
 
                       // Register Button
@@ -208,4 +197,43 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  Widget _buildGenderSelector() {
+    return Row(
+      children: _genders.map((g) {
+        final selected = _selectedGender == g;
+        final isLast = g == _genders.last;
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: isLast ? 0 : 8),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedGender = g),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.primary.withValues(alpha: 0.15)
+                      : AppColors.getSurface(context),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: selected ? AppColors.primary : Colors.transparent,
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  g[0].toUpperCase() + g.substring(1),
+                  style: TextStyle(
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.getTextSecondary(context),
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
 }

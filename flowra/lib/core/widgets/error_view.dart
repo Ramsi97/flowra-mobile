@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'app_button.dart';
 
 /// A friendly, reusable error state: an icon, a human-readable message and an
 /// optional retry action. Replaces raw red error text scattered across pages.
@@ -26,7 +27,7 @@ class ErrorView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: AppColors.error, size: 40),
@@ -52,21 +53,11 @@ class ErrorView extends StatelessWidget {
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 24),
-              ElevatedButton.icon(
+              AppButton(
+                label: 'Try Again',
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh, size: 18),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                label: const Text('Try Again'),
+                icon: Icons.refresh_rounded,
+                expand: false,
               ),
             ],
           ],

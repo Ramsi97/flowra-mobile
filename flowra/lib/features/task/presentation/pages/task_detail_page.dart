@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/app_pills.dart';
 import '../../domain/entities/task.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
@@ -62,67 +66,45 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0F1117) : AppColors.lightBackground;
-    final cardColor = isDark ? const Color(0xFF1A1D27) : AppColors.lightSurface;
-    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? const Color(0xFF8B8FA8) : AppColors.lightTextSecondary;
+    final textPrimary = AppColors.getTextPrimary(context);
+    final textSecondary = AppColors.getTextSecondary(context);
 
     return BlocListener<TaskBloc, TaskState>(
       listener: (context, state) {
         if (state is TaskOperationSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppColors.success,
-            ),
+            SnackBar(content: Text(state.message)),
           );
           Navigator.pop(context);
         } else if (state is TaskError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
+            SnackBar(content: Text(state.message)),
           );
         }
       },
       child: Scaffold(
-        backgroundColor: bgColor,
+        backgroundColor: AppColors.getBackground(context),
         body: SafeArea(
           child: Column(
             children: [
               // ── Top navigation bar ──────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.lg, vertical: AppDimens.md),
                 child: Row(
                   children: [
-                    GestureDetector(
+                    _iconBtn(
+                      icon: Icons.arrow_back_rounded,
                       onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: cardColor,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.arrow_back_ios_new, size: 14, color: textPrimary),
-                            const SizedBox(width: 4),
-                            Text('Back', style: TextStyle(color: textPrimary, fontSize: 14)),
-                          ],
-                        ),
-                      ),
                     ),
                     const Spacer(),
                     _iconBtn(
                       icon: Icons.edit_outlined,
-                      color: cardColor,
-                      iconColor: textPrimary,
                       onTap: () => _showEditSheet(context),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppDimens.sm),
                     _iconBtn(
-                      icon: Icons.more_horiz,
-                      color: cardColor,
-                      iconColor: textPrimary,
+                      icon: Icons.more_horiz_rounded,
                       onTap: () => _showMoreOptions(context),
                     ),
                   ],
@@ -132,102 +114,56 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
               // ── Scrollable body ──────────────────────────────────────────────
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: AppDimens.xl),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppDimens.xs),
 
                       // ── Tag chips ──────────────────────────────────────────
-                      Row(
+                      Wrap(
+                        spacing: AppDimens.sm,
+                        runSpacing: AppDimens.sm,
                         children: [
-                          if (_task.isHard) ...[
-                            _chip(
-                              label: 'Deep Work',
-                              icon: Icons.psychology_outlined,
-                              color: AppColors.primary,
+                          if (_task.isHard)
+                            const AppChip(
+                              icon: Icons.bolt_rounded,
+                              label: 'Deep work',
+                              color: AppColors.accent,
                             ),
-                            const SizedBox(width: 8),
-                          ],
-                          _chip(
-                            label: _getPriorityLabel(),
-                            icon: Icons.flag,
-                            color: _getPriorityColor(),
-                          ),
+                          PriorityBadge(priority: _task.priority),
+                          StatusPill(status: _task.status),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      AppDimens.vGapLg,
 
-                      // ── Title + status ─────────────────────────────────────
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: cardColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(Icons.laptop_mac_outlined, color: textSecondary, size: 24),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _task.title,
-                                  style: TextStyle(
-                                    color: textPrimary,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: _getStatusColor(),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      _getStatusLabel(),
-                                      style: TextStyle(color: textSecondary, fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      // ── Title ──────────────────────────────────────────────
+                      Text(
+                        _task.title,
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          height: 1.15,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                      const SizedBox(height: 24),
-
-                      // ── Divider ────────────────────────────────────────────
-                      Divider(color: Colors.white.withOpacity(0.06), height: 1),
-                      const SizedBox(height: 20),
+                      AppDimens.vGapXl,
 
                       // ── Unscheduled / deadline card ────────────────────────
-                      _buildScheduleCard(context, cardColor, textPrimary, textSecondary),
-                      const SizedBox(height: 12),
+                      _buildScheduleCard(context),
+                      AppDimens.vGapMd,
 
                       // ── Completion card ────────────────────────────────────
-                      _buildCompletionCard(context, cardColor, textPrimary, textSecondary),
-                      const SizedBox(height: 12),
+                      _buildCompletionCard(context),
+                      AppDimens.vGapMd,
 
                       // ── Notes card ─────────────────────────────────────────
-                      _buildNotesCard(context, cardColor, textPrimary, textSecondary),
-                      const SizedBox(height: 12),
+                      _buildNotesCard(context),
+                      AppDimens.vGapMd,
 
                       // ── Activity card ──────────────────────────────────────
-                      _buildActivityCard(context, cardColor, textPrimary, textSecondary),
+                      _buildActivityCard(context),
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -235,7 +171,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
               ),
 
               // ── Bottom action bar ──────────────────────────────────────────
-              _buildBottomBar(context, cardColor),
+              _buildBottomBar(context),
             ],
           ),
         ),
@@ -244,65 +180,53 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
   }
 
   // ─── Schedule Card ──────────────────────────────────────────────────────────
-  Widget _buildScheduleCard(BuildContext context, Color cardColor, Color textPrimary, Color textSecondary) {
+  Widget _buildScheduleCard(BuildContext context) {
+    final textPrimary = AppColors.getTextPrimary(context);
+    final textSecondary = AppColors.getTextSecondary(context);
     final hasDeadline = _task.deadline != null;
 
     // ── Unscheduled ─────────────────────────────────────────────────────────
     if (!hasDeadline) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(16),
-        ),
+      return AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
+                    color: AppColors.warning.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(AppDimens.radiusSm),
                   ),
-                  child: const Icon(Icons.bolt, color: AppColors.warning, size: 22),
+                  child: const Icon(Icons.bolt_rounded,
+                      color: AppColors.warning, size: 22),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: AppDimens.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Unscheduled',
-                        style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
-                      ),
+                      Text('Unscheduled',
+                          style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600)),
                       const SizedBox(height: 3),
-                      Text(
-                        'This task has no time slot yet',
-                        style: TextStyle(color: textSecondary, fontSize: 12),
-                      ),
+                      Text('This task has no time slot yet',
+                          style:
+                              TextStyle(color: textSecondary, fontSize: 12.5)),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            SizedBox(
-              height: 44,
-              child: ElevatedButton.icon(
-                onPressed: _scheduleTask,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                icon: const Icon(Icons.event_available_outlined, color: Colors.white, size: 18),
-                label: const Text(
-                  'Schedule',
-                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-              ),
+            AppDimens.vGapLg,
+            AppButton(
+              label: 'Schedule',
+              icon: Icons.event_available_outlined,
+              onPressed: _scheduleTask,
             ),
           ],
         ),
@@ -317,55 +241,45 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
 
     return Column(
       children: [
-        // Row 1 — Starts | Duration
         Row(
           children: [
             Expanded(
               child: _scheduleInfoCard(
                 icon: Icons.access_time_outlined,
-                iconColor: AppColors.secondary,
+                color: AppColors.secondary,
                 label: 'Starts',
                 value: _formatTime(startTime),
-                valueColor: AppColors.secondary,
-                cardColor: cardColor,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppDimens.md),
             Expanded(
               child: _scheduleInfoCard(
                 icon: Icons.timelapse_outlined,
-                iconColor: AppColors.accent,
+                color: AppColors.accent,
                 label: 'Duration',
                 value: _task.duration.isEmpty ? '—' : _task.duration,
-                valueColor: AppColors.accent,
-                cardColor: cardColor,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        // Row 2 — Ends | Date
+        AppDimens.vGapMd,
         Row(
           children: [
             Expanded(
               child: _scheduleInfoCard(
                 icon: Icons.check_circle_outline,
-                iconColor: AppColors.success,
+                color: AppColors.success,
                 label: 'Ends',
                 value: _formatTime(endTime),
-                valueColor: AppColors.success,
-                cardColor: cardColor,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppDimens.md),
             Expanded(
               child: _scheduleInfoCard(
                 icon: Icons.calendar_today_outlined,
-                iconColor: AppColors.warning,
+                color: AppColors.warning,
                 label: 'Date',
                 value: _formatShortDate(deadline),
-                valueColor: AppColors.warning,
-                cardColor: cardColor,
               ),
             ),
           ],
@@ -376,18 +290,11 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
 
   Widget _scheduleInfoCard({
     required IconData icon,
-    required Color iconColor,
+    required Color color,
     required String label,
     required String value,
-    required Color valueColor,
-    required Color cardColor,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -395,21 +302,21 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(8),
+              color: color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(AppDimens.radiusSm),
             ),
-            child: Icon(icon, color: iconColor, size: 18),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: TextStyle(color: iconColor.withOpacity(0.8), fontSize: 12),
-          ),
+          const SizedBox(height: AppDimens.md),
+          Text(label,
+              style: TextStyle(
+                  color: AppColors.getTextSecondary(context), fontSize: 12.5)),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(color: valueColor, fontSize: 17, fontWeight: FontWeight.bold),
-          ),
+          Text(value,
+              style: TextStyle(
+                  color: AppColors.getTextPrimary(context),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -439,50 +346,43 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
   }
 
   // ─── Completion Card ─────────────────────────────────────────────────────────
-  Widget _buildCompletionCard(BuildContext context, Color cardColor, Color textPrimary, Color textSecondary) {
+  Widget _buildCompletionCard(BuildContext context) {
+    final textPrimary = AppColors.getTextPrimary(context);
+    final textSecondary = AppColors.getTextSecondary(context);
     final isDone = _task.status == 'done';
     final progress = isDone ? 1.0 : 0.0;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text(
-                'Completion',
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text('Completion',
+                  style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600)),
               const Spacer(),
-              Text(
-                '${(progress * 100).toInt()}%',
-                style: TextStyle(color: textSecondary, fontSize: 14),
-              ),
+              Text('${(progress * 100).toInt()}%',
+                  style: TextStyle(color: textSecondary, fontSize: 14)),
             ],
           ),
-          const SizedBox(height: 10),
+          AppDimens.vGapMd,
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 6,
-              backgroundColor: Colors.white.withOpacity(0.08),
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.success),
+              minHeight: 8,
+              backgroundColor: AppColors.getBorder(context),
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(AppColors.success),
             ),
           ),
-          const SizedBox(height: 10),
+          AppDimens.vGapMd,
           Text(
             isDone ? 'Task completed!' : 'Mark as done when finished.',
-            style: TextStyle(color: textSecondary, fontSize: 12),
+            style: TextStyle(color: textSecondary, fontSize: 12.5),
           ),
         ],
       ),
@@ -490,88 +390,76 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
   }
 
   // ─── Notes Card ─────────────────────────────────────────────────────────────
-  Widget _buildNotesCard(BuildContext context, Color cardColor, Color textPrimary, Color textSecondary) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
+  Widget _buildNotesCard(BuildContext context) {
+    final textPrimary = AppColors.getTextPrimary(context);
+    final textSecondary = AppColors.getTextSecondary(context);
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.edit_note_outlined, size: 16, color: AppColors.textSecondary),
+              Icon(Icons.edit_note_outlined, size: 18, color: textSecondary),
               const SizedBox(width: 6),
-              Text(
-                'Notes',
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text('Notes',
+                  style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600)),
               const Spacer(),
               if (!_isEditingNotes)
-                GestureDetector(
+                _miniButton(
+                  label: 'Tap to edit',
+                  color: textSecondary,
+                  bg: AppColors.getSurfaceElevated(context),
                   onTap: () => setState(() => _isEditingNotes = true),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.06),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Tap to edit',
-                      style: TextStyle(color: textSecondary, fontSize: 12),
-                    ),
-                  ),
                 )
               else
-                GestureDetector(
+                _miniButton(
+                  label: 'Save',
+                  color: AppColors.success,
+                  bg: AppColors.success.withValues(alpha: 0.15),
                   onTap: () {
                     setState(() => _isEditingNotes = false);
                     context.read<TaskBloc>().add(
-                      UpdateTaskEvent(_task.id, {'description': _notesController.text}),
-                    );
+                          UpdateTaskEvent(
+                              _task.id, {'description': _notesController.text}),
+                        );
                   },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(color: AppColors.success, fontSize: 12),
-                    ),
-                  ),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          AppDimens.vGapMd,
           _isEditingNotes
               ? TextField(
                   controller: _notesController,
                   minLines: 3,
                   maxLines: 8,
                   autofocus: true,
-                  style: TextStyle(color: textPrimary, fontSize: 13, height: 1.5),
+                  style:
+                      TextStyle(color: textPrimary, fontSize: 14, height: 1.5),
                   decoration: InputDecoration(
+                    isDense: true,
+                    filled: false,
                     border: InputBorder.none,
-                    hintText: 'Add context, links, or reminders here...',
-                    hintStyle: TextStyle(color: textSecondary, fontSize: 13),
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                    hintText: 'Add context, links, or reminders here…',
+                    hintStyle: TextStyle(color: textSecondary, fontSize: 14),
                   ),
                 )
               : Text(
                   _task.description.isEmpty
-                      ? 'No notes yet. Add context, links, or reminders here...'
+                      ? 'No notes yet. Add context, links, or reminders here…'
                       : _task.description,
                   style: TextStyle(
-                    color: _task.description.isEmpty ? textSecondary : textPrimary,
-                    fontSize: 13,
-                    fontStyle: _task.description.isEmpty ? FontStyle.italic : FontStyle.normal,
+                    color:
+                        _task.description.isEmpty ? textSecondary : textPrimary,
+                    fontSize: 14,
+                    fontStyle: _task.description.isEmpty
+                        ? FontStyle.italic
+                        : FontStyle.normal,
                     height: 1.5,
                   ),
                 ),
@@ -581,44 +469,36 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
   }
 
   // ─── Activity Card ───────────────────────────────────────────────────────────
-  Widget _buildActivityCard(BuildContext context, Color cardColor, Color textPrimary, Color textSecondary) {
+  Widget _buildActivityCard(BuildContext context) {
+    final textPrimary = AppColors.getTextPrimary(context);
     final createdAt = _task.createdAt;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Activity',
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 14),
+          Text('Activity',
+              style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600)),
+          AppDimens.vGapMd,
           _activityEntry(
             dot: AppColors.success,
             label: 'Task created',
-            time: createdAt != null ? _formatRelativeDate(createdAt) : 'Just now',
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
+            time:
+                createdAt != null ? _formatRelativeDate(createdAt) : 'Just now',
+            showConnector: _task.status == 'done',
           ),
-          if (_task.status == 'done') ...[
-            const SizedBox(height: 12),
+          if (_task.status == 'done')
             _activityEntry(
               dot: AppColors.primary,
               label: 'Marked as done',
-              time: _task.updatedAt != null ? _formatRelativeDate(_task.updatedAt!) : 'Recently',
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
+              time: _task.updatedAt != null
+                  ? _formatRelativeDate(_task.updatedAt!)
+                  : 'Recently',
+              showConnector: false,
             ),
-          ],
         ],
       ),
     );
@@ -628,43 +508,61 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
     required Color dot,
     required String label,
     required String time,
-    required Color textPrimary,
-    required Color textSecondary,
+    required bool showConnector,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          children: [
-            const SizedBox(height: 2),
-            Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: dot),
+    final textPrimary = AppColors.getTextPrimary(context);
+    final textSecondary = AppColors.getTextSecondary(context);
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              const SizedBox(height: 2),
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: dot),
+              ),
+              if (showConnector)
+                Expanded(
+                  child: Container(
+                    width: 1.5,
+                    color: AppColors.getBorder(context),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: AppDimens.md),
+          Padding(
+            padding: EdgeInsets.only(bottom: showConnector ? AppDimens.md : 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500)),
+                const SizedBox(height: 2),
+                Text(time,
+                    style: TextStyle(color: textSecondary, fontSize: 12.5)),
+              ],
             ),
-            Container(width: 1.5, height: 24, color: Colors.white.withOpacity(0.08)),
-          ],
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: TextStyle(color: textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 2),
-            Text(time, style: TextStyle(color: textSecondary, fontSize: 12)),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
   // ─── Bottom Bar ──────────────────────────────────────────────────────────────
-  Widget _buildBottomBar(BuildContext context, Color cardColor) {
+  Widget _buildBottomBar(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      padding: const EdgeInsets.fromLTRB(
+          AppDimens.xl, AppDimens.md, AppDimens.xl, AppDimens.xl),
       decoration: BoxDecoration(
         color: AppColors.getBackground(context),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
+        border: Border(top: BorderSide(color: AppColors.getBorder(context))),
       ),
       child: BlocBuilder<TaskBloc, TaskState>(
         builder: (context, state) {
@@ -674,61 +572,30 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
           return Row(
             children: [
               Expanded(
-                child: GestureDetector(
-                  onTap: isLoading
-                      ? null
-                      : () {
-                          final newStatus = isDone ? 'todo' : 'done';
-                          context.read<TaskBloc>().add(UpdateTaskEvent(_task.id, {'status': newStatus}));
-                        },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: isDone ? Colors.white.withOpacity(0.08) : AppColors.success,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Center(
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  isDone ? Icons.refresh : Icons.check_circle_outline,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  isDone ? 'Mark as Todo' : 'Mark Done',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                ),
+                child: isDone
+                    ? AppButton.tonal(
+                        label: 'Mark as Todo',
+                        icon: Icons.refresh_rounded,
+                        loading: isLoading,
+                        onPressed: () => _toggleDone(isDone),
+                      )
+                    : _DoneButton(
+                        loading: isLoading,
+                        onPressed: () => _toggleDone(isDone),
+                      ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppDimens.md),
               GestureDetector(
                 onTap: () => _showDeleteConfirmation(context),
                 child: Container(
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(14),
+                    color: AppColors.error.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(AppDimens.radiusSm),
                   ),
-                  child: const Icon(Icons.delete_outline, color: AppColors.error, size: 22),
+                  child: const Icon(Icons.delete_outline_rounded,
+                      color: AppColors.error, size: 22),
                 ),
               ),
             ],
@@ -738,40 +605,48 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
     );
   }
 
+  void _toggleDone(bool isDone) {
+    final newStatus = isDone ? 'todo' : 'done';
+    context.read<TaskBloc>().add(UpdateTaskEvent(_task.id, {'status': newStatus}));
+  }
+
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-  Widget _iconBtn({
-    required IconData icon,
+  Widget _iconBtn({required IconData icon, required VoidCallback onTap}) {
+    return Material(
+      color: AppColors.getSurface(context),
+      shape:
+          CircleBorder(side: BorderSide(color: AppColors.getBorder(context))),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(9),
+          child: Icon(icon,
+              color: AppColors.getTextPrimary(context), size: 20),
+        ),
+      ),
+    );
+  }
+
+  Widget _miniButton({
+    required String label,
     required Color color,
-    required Color iconColor,
+    required Color bg,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, color: iconColor, size: 18),
-      ),
-    );
-  }
-
-  Widget _chip({required String label, required IconData icon, required Color color}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 13),
-          const SizedBox(width: 5),
-          Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
-        ],
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppDimens.md, vertical: 5),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: color, fontSize: 12.5, fontWeight: FontWeight.w600)),
       ),
     );
   }
@@ -781,23 +656,23 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: AppColors.getSurface(context),
-          title: Text('Delete Task', style: TextStyle(color: AppColors.getTextPrimary(context))),
+          title: const Text('Delete Task'),
           content: const Text(
             'Are you sure you want to delete this task? This action cannot be undone.',
-            style: TextStyle(color: AppColors.textSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+              child: Text('Cancel',
+                  style: TextStyle(color: AppColors.getTextSecondary(context))),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
                 context.read<TaskBloc>().add(DeleteTaskEvent(_task.id));
               },
-              child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+              child: const Text('Delete',
+                  style: TextStyle(color: AppColors.error)),
             ),
           ],
         );
@@ -808,34 +683,51 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
   void _showMoreOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.getSurface(context),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              vertical: AppDimens.lg, horizontal: AppDimens.sm),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _sheetHandle(context),
+              const SizedBox(height: AppDimens.md),
+              ListTile(
+                leading: Icon(Icons.edit_outlined,
+                    color: AppColors.getTextPrimary(context)),
+                title: Text('Edit Task',
+                    style:
+                        TextStyle(color: AppColors.getTextPrimary(context))),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showEditSheet(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded,
+                    color: AppColors.error),
+                title: const Text('Delete Task',
+                    style: TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeleteConfirmation(context);
+                },
+              ),
+            ],
+          ),
+        ),
       ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Icon(Icons.edit_outlined, color: AppColors.getTextPrimary(context)),
-              title: Text('Edit Task', style: TextStyle(color: AppColors.getTextPrimary(context))),
-              onTap: () {
-                Navigator.pop(context);
-                _showEditSheet(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text('Delete Task', style: TextStyle(color: AppColors.error)),
-              onTap: () {
-                Navigator.pop(context);
-                _showDeleteConfirmation(context);
-              },
-            ),
-          ],
+    );
+  }
+
+  Widget _sheetHandle(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 40,
+        height: 4,
+        decoration: BoxDecoration(
+          color: AppColors.getBorder(context),
+          borderRadius: BorderRadius.circular(2),
         ),
       ),
     );
@@ -843,12 +735,8 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
 
   // ─── Edit Bottom Sheet ───────────────────────────────────────────────────────
   void _showEditSheet(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? const Color(0xFF13161F) : AppColors.lightBackground;
-    final cardColor = isDark ? const Color(0xFF1A1D27) : AppColors.lightSurface;
-    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? const Color(0xFF8B8FA8) : AppColors.lightTextSecondary;
-    final borderColor = isDark ? Colors.white10 : Colors.black12;
+    final textPrimary = AppColors.getTextPrimary(context);
+    final textSecondary = AppColors.getTextSecondary(context);
 
     // Local edit state — initialised from current task
     final titleCtrl = TextEditingController(text: _task.title);
@@ -857,53 +745,33 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
     int priority = _task.priority;
     bool isHard = _task.isHard;
     bool hasDeadline = _task.deadline != null;
-    DateTime deadline = _task.deadline ?? DateTime.now().add(const Duration(hours: 1));
+    DateTime deadline =
+        _task.deadline ?? DateTime.now().add(const Duration(hours: 1));
     final formKey = GlobalKey<FormState>();
 
-    InputDecoration fieldDeco(String hint) => InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: textSecondary),
-          filled: true,
-          fillColor: cardColor,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: borderColor),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: borderColor),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.primary),
-          ),
-        );
-
     Widget label(String t) => Padding(
-          padding: const EdgeInsets.only(bottom: 8, top: 20),
+          padding: const EdgeInsets.only(bottom: AppDimens.sm, top: AppDimens.lg),
           child: Text(
             t,
-            style: TextStyle(color: textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1),
+            style: TextStyle(
+                color: textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600),
           ),
         );
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: sheetBg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (sheetCtx) {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 16,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 32,
+                left: AppDimens.xl,
+                right: AppDimens.xl,
+                top: AppDimens.lg,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + AppDimens.xxl,
               ),
               child: Form(
                 key: formKey,
@@ -912,207 +780,176 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // ── Handle ────────────────────────────────────────────
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.white24,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // ── Sheet title ────────────────────────────────────────
+                      _sheetHandle(ctx),
+                      const SizedBox(height: AppDimens.lg),
                       Row(
                         children: [
-                          Text(
-                            'Edit Task',
-                            style: TextStyle(
-                              color: textPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          Text('Edit Task',
+                              style: TextStyle(
+                                  color: textPrimary,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold)),
                           const Spacer(),
                           TextButton(
                             onPressed: () => Navigator.pop(sheetCtx),
-                            child: Text('Cancel', style: TextStyle(color: textSecondary)),
+                            child: Text('Cancel',
+                                style: TextStyle(color: textSecondary)),
                           ),
                         ],
                       ),
-
-                      // ── Title ─────────────────────────────────────────────
-                      label('TITLE'),
+                      label('Title'),
                       TextFormField(
                         controller: titleCtrl,
                         style: TextStyle(color: textPrimary),
-                        decoration: fieldDeco('Task title'),
-                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                        decoration:
+                            const InputDecoration(hintText: 'Task title'),
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Required'
+                            : null,
                       ),
-
-                      // ── Description ───────────────────────────────────────
-                      label('DESCRIPTION'),
+                      label('Description'),
                       TextFormField(
                         controller: descCtrl,
                         style: TextStyle(color: textPrimary),
                         maxLines: 3,
-                        decoration: fieldDeco('What needs to be done?'),
+                        decoration: const InputDecoration(
+                            hintText: 'What needs to be done?'),
                       ),
-
-                      // ── Duration + Priority ───────────────────────────────
-                      label('DURATION'),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: durationCtrl,
-                              style: TextStyle(color: textPrimary),
-                              decoration: fieldDeco('e.g. 1h 30m'),
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Required';
-                                final trimmed = v.trim();
-                                if (!trimmed.contains(RegExp(r'\d'))) return 'Invalid format (e.g. 1h 30m)';
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              value: priority,
-                              dropdownColor: cardColor,
-                              style: TextStyle(color: textPrimary),
-                              decoration: fieldDeco('').copyWith(labelText: 'Priority', labelStyle: TextStyle(color: textSecondary)),
-                              items: [1, 2, 3].map((p) {
-                                return DropdownMenuItem(
-                                  value: p,
-                                  child: Text(
-                                    p == 1 ? 'High' : (p == 2 ? 'Medium' : 'Low'),
-                                    style: TextStyle(color: textPrimary),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (v) => setSheetState(() => priority = v!),
-                            ),
-                          ),
-                        ],
+                      label('Duration'),
+                      TextFormField(
+                        controller: durationCtrl,
+                        style: TextStyle(color: textPrimary),
+                        decoration:
+                            const InputDecoration(hintText: 'e.g. 1h 30m'),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Required';
+                          if (!v.trim().contains(RegExp(r'\d'))) {
+                            return 'Invalid format (e.g. 1h 30m)';
+                          }
+                          return null;
+                        },
                       ),
-
-                      // ── Deadline toggle ───────────────────────────────────
-                      label('DEADLINE'),
+                      label('Priority'),
+                      _EditPrioritySelector(
+                        value: priority,
+                        onChanged: (p) => setSheetState(() => priority = p),
+                      ),
+                      label('Deadline'),
                       Row(
                         children: [
                           Switch(
                             value: hasDeadline,
-                            activeColor: AppColors.primary,
-                            onChanged: (v) => setSheetState(() => hasDeadline = v),
+                            onChanged: (v) =>
+                                setSheetState(() => hasDeadline = v),
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            hasDeadline ? 'Scheduled' : 'No deadline',
-                            style: TextStyle(color: textSecondary, fontSize: 13),
-                          ),
+                          const SizedBox(width: AppDimens.sm),
+                          Text(hasDeadline ? 'Scheduled' : 'No deadline',
+                              style: TextStyle(
+                                  color: textSecondary, fontSize: 13.5)),
                         ],
                       ),
-                      if (hasDeadline) ...
-                        [
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () async {
-                              final date = await showDatePicker(
+                      if (hasDeadline) ...[
+                        const SizedBox(height: AppDimens.sm),
+                        GestureDetector(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: ctx,
+                              initialDate: deadline,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2035),
+                            );
+                            if (date != null && ctx.mounted) {
+                              final time = await showTimePicker(
                                 context: ctx,
-                                initialDate: deadline,
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime(2035),
+                                initialTime: TimeOfDay.fromDateTime(deadline),
                               );
-                              if (date != null && ctx.mounted) {
-                                final time = await showTimePicker(
-                                  context: ctx,
-                                  initialTime: TimeOfDay.fromDateTime(deadline),
-                                );
-                                if (time != null) {
-                                  setSheetState(() {
-                                    deadline = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-                                  });
-                                }
+                              if (time != null) {
+                                setSheetState(() {
+                                  deadline = DateTime(date.year, date.month,
+                                      date.day, time.hour, time.minute);
+                                });
                               }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                              decoration: BoxDecoration(
-                                color: cardColor,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: borderColor),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.calendar_today_outlined, color: AppColors.primary, size: 18),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    '${deadline.day}/${deadline.month}/${deadline.year}  ${deadline.hour.toString().padLeft(2, '0')}:${deadline.minute.toString().padLeft(2, '0')}',
-                                    style: TextStyle(color: textPrimary, fontSize: 14),
-                                  ),
-                                  const Spacer(),
-                                  Icon(Icons.chevron_right, color: textSecondary, size: 18),
-                                ],
-                              ),
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppDimens.lg,
+                                vertical: AppDimens.lg),
+                            decoration: BoxDecoration(
+                              color: AppColors.getSurface(ctx),
+                              borderRadius:
+                                  BorderRadius.circular(AppDimens.radiusSm),
+                              border: Border.all(
+                                  color: AppColors.getBorder(ctx)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_today_rounded,
+                                    color: AppColors.primary, size: 18),
+                                const SizedBox(width: AppDimens.md),
+                                Text(
+                                  '${deadline.day}/${deadline.month}/${deadline.year}  ${deadline.hour.toString().padLeft(2, '0')}:${deadline.minute.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                      color: textPrimary, fontSize: 14),
+                                ),
+                                const Spacer(),
+                                Icon(Icons.chevron_right_rounded,
+                                    color: textSecondary, size: 20),
+                              ],
                             ),
                           ),
-                        ],
-
-                      // ── Deep Work toggle ──────────────────────────────────
-                      const SizedBox(height: 20),
+                        ),
+                      ],
+                      const SizedBox(height: AppDimens.lg),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.fromLTRB(AppDimens.lg,
+                            AppDimens.sm, AppDimens.md, AppDimens.sm),
                         decoration: BoxDecoration(
-                          color: cardColor,
-                          borderRadius: BorderRadius.circular(12),
+                          color: AppColors.getSurface(ctx),
+                          borderRadius:
+                              BorderRadius.circular(AppDimens.radiusSm),
+                          border: Border.all(color: AppColors.getBorder(ctx)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.psychology_outlined, color: AppColors.accent, size: 20),
-                            const SizedBox(width: 10),
-                            Text('Deep Work / Hard Task', style: TextStyle(color: textPrimary, fontSize: 14)),
-                            const Spacer(),
+                            const Icon(Icons.bolt_rounded,
+                                color: AppColors.accent, size: 20),
+                            const SizedBox(width: AppDimens.md),
+                            Expanded(
+                              child: Text('Deep work / hard task',
+                                  style: TextStyle(
+                                      color: textPrimary, fontSize: 14.5)),
+                            ),
                             Switch(
                               value: isHard,
-                              activeColor: AppColors.accent,
-                              onChanged: (v) => setSheetState(() => isHard = v),
+                              onChanged: (v) =>
+                                  setSheetState(() => isHard = v),
                             ),
                           ],
                         ),
                       ),
-
-                      // ── Save button ───────────────────────────────────────
-                      const SizedBox(height: 28),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                          onPressed: () {
-                            if (!(formKey.currentState?.validate() ?? false)) return;
-                            Navigator.pop(sheetCtx);
-                            final updates = <String, dynamic>{
-                              'title': titleCtrl.text.trim(),
-                              'description': descCtrl.text.trim(),
-                              'duration': durationCtrl.text.trim(),
-                              'priority': priority,
-                              'is_hard': isHard,
-                              'deadline': hasDeadline ? deadline.toUtc().toIso8601String() : null,
-                            };
-                            context.read<TaskBloc>().add(UpdateTaskEvent(_task.id, updates));
-                          },
-                          child: const Text(
-                            'Save Changes',
-                            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-                          ),
-                        ),
+                      const SizedBox(height: AppDimens.xl),
+                      AppButton(
+                        label: 'Save Changes',
+                        onPressed: () {
+                          if (!(formKey.currentState?.validate() ?? false)) {
+                            return;
+                          }
+                          Navigator.pop(sheetCtx);
+                          final updates = <String, dynamic>{
+                            'title': titleCtrl.text.trim(),
+                            'description': descCtrl.text.trim(),
+                            'duration': durationCtrl.text.trim(),
+                            'priority': priority,
+                            'is_hard': isHard,
+                            'deadline': hasDeadline
+                                ? deadline.toUtc().toIso8601String()
+                                : null,
+                          };
+                          context
+                              .read<TaskBloc>()
+                              .add(UpdateTaskEvent(_task.id, updates));
+                        },
                       ),
                     ],
                   ),
@@ -1123,50 +960,6 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
         );
       },
     );
-  }
-
-  Color _getPriorityColor() {
-    switch (_task.priority) {
-      case 1:
-        return AppColors.error;
-      case 2:
-        return AppColors.warning;
-      default:
-        return AppColors.secondary;
-    }
-  }
-
-  String _getPriorityLabel() {
-    switch (_task.priority) {
-      case 1:
-        return 'High Priority';
-      case 2:
-        return 'Medium Priority';
-      default:
-        return 'Low Priority';
-    }
-  }
-
-  Color _getStatusColor() {
-    switch (_task.status) {
-      case 'done':
-        return AppColors.success;
-      case 'skipped':
-        return AppColors.textSecondary;
-      default:
-        return AppColors.warning;
-    }
-  }
-
-  String _getStatusLabel() {
-    switch (_task.status) {
-      case 'done':
-        return 'Completed';
-      case 'skipped':
-        return 'Skipped';
-      default:
-        return 'In progress';
-    }
   }
 
   String _formatDate(DateTime date) {
@@ -1191,5 +984,103 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
     } else {
       return _formatDate(date);
     }
+  }
+}
+
+/// Segmented High / Medium / Low selector used in the edit sheet.
+class _EditPrioritySelector extends StatelessWidget {
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  const _EditPrioritySelector({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final p in const [1, 2, 3]) ...[
+          Expanded(child: _segment(context, p)),
+          if (p != 3) const SizedBox(width: AppDimens.sm),
+        ],
+      ],
+    );
+  }
+
+  Widget _segment(BuildContext context, int p) {
+    final selected = value == p;
+    final color = AppColors.priorityColor(p);
+    final label = p == 1 ? 'High' : (p == 2 ? 'Medium' : 'Low');
+    return GestureDetector(
+      onTap: () => onChanged(p),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected
+              ? color.withValues(alpha: 0.14)
+              : AppColors.getSurface(context),
+          borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+          border: Border.all(
+            color: selected ? color : AppColors.getBorder(context),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? color : AppColors.getTextSecondary(context),
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-width green "Mark Done" button for the bottom bar.
+class _DoneButton extends StatelessWidget {
+  final bool loading;
+  final VoidCallback onPressed;
+
+  const _DoneButton({required this.loading, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: loading ? null : onPressed,
+        borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+        child: Container(
+          height: 52,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.success,
+            borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+          ),
+          child: loading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.4, color: Colors.white),
+                )
+              : const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle_outline_rounded,
+                        color: Colors.white, size: 20),
+                    SizedBox(width: AppDimens.sm),
+                    Text('Mark Done',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+        ),
+      ),
+    );
   }
 }

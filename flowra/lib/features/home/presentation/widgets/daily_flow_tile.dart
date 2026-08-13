@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/app_pills.dart';
 import '../../../task/domain/entities/task.dart';
 import '../../../task/presentation/pages/task_detail_page.dart';
 
@@ -23,99 +25,109 @@ class DailyFlowTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildTimeline(context),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppDimens.md),
           Expanded(child: _buildTaskCard(context)),
         ],
       ),
     );
   }
 
+  Color _dotColor() {
+    switch (task.status) {
+      case 'done':
+        return AppColors.success;
+      case 'skipped':
+        return AppColors.warning;
+      default:
+        return AppColors.primary;
+    }
+  }
+
   Widget _buildTimeline(BuildContext context) {
+    final line = AppColors.getBorder(context);
     return SizedBox(
-      width: 20,
+      width: 18,
       child: Column(
         children: [
-          if (!isFirst)
-            Expanded(
-              child: Container(
-                width: 2,
-                color: AppColors.primary.withOpacity(0.3),
-              ),
-            ),
+          Expanded(
+            child: isFirst
+                ? const SizedBox()
+                : Container(width: 2, color: line),
+          ),
           Container(
-            width: 12,
-            height: 12,
+            width: 14,
+            height: 14,
             decoration: BoxDecoration(
-              color: task.status == 'done'
-                  ? AppColors.success
-                  : AppColors.primary,
+              color: _dotColor(),
               shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.getBackground(context),
+                width: 2,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color:
-                      (task.status == 'done'
-                              ? AppColors.success
-                              : AppColors.primary)
-                          .withOpacity(0.5),
+                  color: _dotColor().withValues(alpha: 0.4),
                   blurRadius: 8,
-                  spreadRadius: 2,
+                  spreadRadius: 1,
                 ),
               ],
             ),
           ),
-          if (!isLast)
-            Expanded(
-              child: Container(
-                width: 2,
-                color: AppColors.primary.withOpacity(0.3),
-              ),
-            ),
+          Expanded(
+            child: isLast
+                ? const SizedBox()
+                : Container(width: 2, color: line),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildTaskCard(BuildContext context) {
+    final done = task.status == 'done';
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: GestureDetector(
+      padding: const EdgeInsets.symmetric(vertical: AppDimens.sm),
+      child: AppCard(
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => TaskDetailPage(task: task)),
           );
         },
-        child: GlassContainer(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      task.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppColors.getTextPrimary(context),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    task.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.getTextPrimary(context),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      decoration: done ? TextDecoration.lineThrough : null,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                ),
+                if (task.duration.trim().isNotEmpty) ...[
+                  const SizedBox(width: AppDimens.sm),
                   Text(
                     task.duration,
                     style: TextStyle(
                       color: AppColors.getTextSecondary(context),
                       fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 4),
+              ],
+            ),
+            if (task.description.trim().isNotEmpty) ...[
+              const SizedBox(height: AppDimens.xs),
               Text(
                 task.description,
                 maxLines: 2,
@@ -123,54 +135,15 @@ class DailyFlowTile extends StatelessWidget {
                 style: TextStyle(
                   color: AppColors.getTextSecondary(context),
                   fontSize: 13,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getPriorityColor().withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _getPriorityColor().withOpacity(0.3),
-                  ),
-                ),
-                child: Text(
-                  _getPriorityLabel(),
-                  style: TextStyle(
-                    color: _getPriorityColor(),
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  height: 1.4,
                 ),
               ),
             ],
-          ),
+            const SizedBox(height: AppDimens.md),
+            PriorityBadge(priority: task.priority),
+          ],
         ),
       ),
     );
-  }
-
-  Color _getPriorityColor() {
-    switch (task.priority) {
-      case 1:
-        return AppColors.error;
-      case 2:
-        return AppColors.warning;
-      default:
-        return AppColors.secondary;
-    }
-  }
-
-  String _getPriorityLabel() {
-    switch (task.priority) {
-      case 1:
-        return 'HIGH PRIORITY';
-      case 2:
-        return 'MEDIUM';
-      default:
-        return 'LOW';
-    }
   }
 }

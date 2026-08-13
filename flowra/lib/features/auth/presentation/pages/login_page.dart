@@ -45,7 +45,7 @@ class _LoginPageState extends State<LoginPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Welcome, ${state.user.fullName}!'),
-                backgroundColor: const Color(0xFF6C63FF),
+                backgroundColor: AppColors.primary,
               ),
             );
             // TODO: Navigate to home page when implemented
@@ -53,7 +53,7 @@ class _LoginPageState extends State<LoginPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: const Color(0xFFFF6B6B),
+                backgroundColor: AppColors.error,
               ),
             );
           }
@@ -71,9 +71,8 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       // Logo / App Name
                       ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [Color(0xFF6C63FF), Color(0xFF8B5CF6)],
-                        ).createShader(bounds),
+                        shaderCallback: (bounds) =>
+                            AppColors.primaryGradient.createShader(bounds),
                         child: const Text(
                           'Flowra',
                           style: TextStyle(
@@ -147,10 +146,10 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               );
                             },
-                            child: const Text(
+                            child: Text(
                               'Sign Up',
                               style: TextStyle(
-                                color: Color(0xFF6C63FF),
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),

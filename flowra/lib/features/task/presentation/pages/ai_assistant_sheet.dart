@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_pills.dart';
 import '../../domain/entities/task.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
@@ -87,7 +90,8 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
           return Container(
             decoration: BoxDecoration(
               color: AppColors.getBackground(context),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(AppDimens.radiusXl)),
             ),
             child: BlocListener<TaskBloc, TaskState>(
               listener: (context, state) {
@@ -128,7 +132,7 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
       width: 44,
       height: 5,
       decoration: BoxDecoration(
-        color: AppColors.getTextSecondary(context).withOpacity(0.4),
+        color: AppColors.getBorder(context),
         borderRadius: BorderRadius.circular(3),
       ),
     );
@@ -136,19 +140,20 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 12, 12),
+      padding: const EdgeInsets.fromLTRB(
+          AppDimens.xl, AppDimens.md, AppDimens.md, AppDimens.md),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 44,
+            height: 44,
             decoration: const BoxDecoration(
               gradient: AppColors.primaryGradient,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.psychology, color: Colors.white),
+            child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 22),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppDimens.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,21 +163,21 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
                   style: TextStyle(
                     color: AppColors.getTextPrimary(context),
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
                   'Describe a goal, get a task plan',
                   style: TextStyle(
                     color: AppColors.getTextSecondary(context),
-                    fontSize: 12,
+                    fontSize: 12.5,
                   ),
                 ),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close_rounded),
             color: AppColors.getTextSecondary(context),
             onPressed: () => Navigator.pop(context),
           ),
@@ -194,14 +199,15 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
       children: [
         ListView.builder(
           controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+          padding: const EdgeInsets.fromLTRB(
+              AppDimens.xl, AppDimens.xs, AppDimens.xl, AppDimens.lg),
           itemCount: _drafts.length,
           itemBuilder: (context, index) => _buildDraftCard(_drafts[index], index),
         ),
         if (_busy)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               child: const Center(child: CircularProgressIndicator()),
             ),
           ),
@@ -217,7 +223,8 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
     ];
     return ListView(
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+          AppDimens.xl, AppDimens.sm, AppDimens.xl, AppDimens.lg),
       children: [
         TextField(
           controller: _goalController,
@@ -227,33 +234,15 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
           style: TextStyle(color: AppColors.getTextPrimary(context)),
           decoration: InputDecoration(
             hintText: 'What do you want to get done?',
-            hintStyle: TextStyle(color: AppColors.getTextSecondary(context)),
-            filled: true,
-            fillColor: AppColors.getSurface(context),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
           ),
         ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton.icon(
-            onPressed: _suggest,
-            icon: const Icon(Icons.auto_awesome, color: Colors.white),
-            label: const Text('Generate tasks',
-                style: TextStyle(color: Colors.white, fontSize: 16)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
+        AppDimens.vGapLg,
+        AppButton(
+          label: 'Generate tasks',
+          icon: Icons.auto_awesome_rounded,
+          onPressed: _suggest,
         ),
-        const SizedBox(height: 28),
+        AppDimens.vGapXxl,
         Text(
           'TRY',
           style: TextStyle(
@@ -263,38 +252,42 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 12),
+        AppDimens.vGapMd,
         ...examples.map(
           (e) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                _goalController.text = e;
-                _suggest();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.getSurface(context),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white10
-                        : Colors.grey.shade200,
+            padding: const EdgeInsets.only(bottom: AppDimens.sm),
+            child: Material(
+              color: AppColors.getSurface(context),
+              borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+                onTap: () {
+                  _goalController.text = e;
+                  _suggest();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppDimens.lg, vertical: AppDimens.lg),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+                    border: Border.all(color: AppColors.getBorder(context)),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.bolt, size: 18, color: AppColors.secondary),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        e,
-                        style: TextStyle(color: AppColors.getTextPrimary(context)),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.bolt_rounded,
+                          size: 18, color: AppColors.secondary),
+                      const SizedBox(width: AppDimens.md),
+                      Expanded(
+                        child: Text(
+                          e,
+                          style: TextStyle(
+                              color: AppColors.getTextPrimary(context)),
+                        ),
                       ),
-                    ),
-                  ],
+                      Icon(Icons.arrow_forward_rounded,
+                          size: 16, color: AppColors.getTextSecondary(context)),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -305,23 +298,13 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
   }
 
   Widget _buildDraftCard(Task task, int index) {
-    final priorityLabel =
-        task.priority == 1 ? 'High' : (task.priority == 2 ? 'Medium' : 'Low');
-    final priorityColor = task.priority == 1
-        ? AppColors.error
-        : (task.priority == 2 ? AppColors.warning : AppColors.success);
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppDimens.md),
+      padding: const EdgeInsets.all(AppDimens.lg),
       decoration: BoxDecoration(
         color: AppColors.getSurface(context),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white10
-              : Colors.grey.shade200,
-        ),
+        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+        border: Border.all(color: AppColors.getBorder(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,62 +318,43 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
                   style: TextStyle(
                     color: AppColors.getTextPrimary(context),
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.close, size: 18),
+                icon: const Icon(Icons.close_rounded, size: 18),
                 color: AppColors.getTextSecondary(context),
                 onPressed: () => setState(() => _drafts.removeAt(index)),
               ),
             ],
           ),
           if (task.description.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: AppDimens.xs),
             Text(
               task.description,
               style: TextStyle(
                 color: AppColors.getTextSecondary(context),
                 fontSize: 13,
-                height: 1.3,
+                height: 1.4,
               ),
             ),
           ],
-          const SizedBox(height: 12),
-          Row(
+          AppDimens.vGapMd,
+          Wrap(
+            spacing: AppDimens.sm,
+            runSpacing: AppDimens.sm,
             children: [
-              _chip(Icons.timer_outlined, task.duration),
-              const SizedBox(width: 8),
-              _chip(Icons.flag_outlined, priorityLabel, color: priorityColor),
-              if (task.isHard) ...[
-                const SizedBox(width: 8),
-                _chip(Icons.bolt, 'Deep work', color: AppColors.primary),
-              ],
+              AppChip(icon: Icons.timer_outlined, label: task.duration),
+              PriorityBadge(priority: task.priority),
+              if (task.isHard)
+                const AppChip(
+                  icon: Icons.bolt_rounded,
+                  label: 'Deep work',
+                  color: AppColors.accent,
+                ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _chip(IconData icon, String label, {Color? color}) {
-    final c = color ?? AppColors.getTextSecondary(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: c.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: c),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(color: c, fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -399,16 +363,13 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
 
   Widget _buildFooter() {
     if (_drafts.isEmpty) return const SizedBox.shrink();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(
-          16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(AppDimens.lg, AppDimens.md, AppDimens.lg,
+          AppDimens.md + MediaQuery.of(context).padding.bottom),
       decoration: BoxDecoration(
         color: AppColors.getSurface(context),
-        border: Border(
-          top: BorderSide(color: isDark ? Colors.white10 : Colors.grey.shade200),
-        ),
+        border: Border(top: BorderSide(color: AppColors.getBorder(context))),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -422,48 +383,45 @@ class _AiAssistantSheetState extends State<_AiAssistantSheet> {
                   onSubmitted: (_) => _refine(),
                   style: TextStyle(color: AppColors.getTextPrimary(context)),
                   decoration: InputDecoration(
-                    hintText: 'Refine: "make them shorter"...',
+                    hintText: 'Refine: "make them shorter"…',
                     hintStyle: const TextStyle(fontSize: 13),
                     isDense: true,
                     filled: true,
                     fillColor: AppColors.getBackground(context),
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppDimens.lg, vertical: AppDimens.md),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(AppDimens.radiusPill),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppDimens.radiusPill),
                       borderSide: BorderSide.none,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              CircleAvatar(
-                backgroundColor: AppColors.secondary,
-                child: IconButton(
-                  icon: const Icon(Icons.tune, color: Colors.white, size: 18),
-                  onPressed: _busy ? null : _refine,
+              const SizedBox(width: AppDimens.sm),
+              Material(
+                color: AppColors.secondary,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: _busy ? null : _refine,
+                  child: const Padding(
+                    padding: EdgeInsets.all(AppDimens.md),
+                    child: Icon(Icons.tune_rounded, color: Colors.white, size: 20),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              onPressed: _busy ? null : _acceptAll,
-              icon: const Icon(Icons.check, color: Colors.white),
-              label: Text(
-                'Add ${_drafts.length} task${_drafts.length == 1 ? '' : 's'}',
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
+          AppDimens.vGapMd,
+          AppButton(
+            label: 'Add ${_drafts.length} task${_drafts.length == 1 ? '' : 's'}',
+            icon: Icons.check_rounded,
+            loading: _busy,
+            onPressed: _acceptAll,
           ),
         ],
       ),

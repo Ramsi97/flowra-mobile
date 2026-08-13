@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class SplashPage extends StatefulWidget {
   final VoidCallback onSplashComplete;
@@ -85,8 +86,8 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                         borderRadius: BorderRadius.circular(32),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF9155FD).withOpacity(0.15),
-                            blurRadius: 36,
+                            color: AppColors.primary.withValues(alpha: 0.28),
+                            blurRadius: 40,
                             spreadRadius: 2,
                           )
                         ],
@@ -107,16 +108,20 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                   opacity: _textOpacityAnimation.value,
                   child: Column(
                     children: [
-                      const Text(
-                        'Flowra',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5,
-                          color: Colors.white,
+                      ShaderMask(
+                        shaderCallback: (bounds) =>
+                            AppColors.primaryGradient.createShader(bounds),
+                        child: const Text(
+                          'Flowra',
+                          style: TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       const Text(
                         'Find your flow state.',
                         style: TextStyle(

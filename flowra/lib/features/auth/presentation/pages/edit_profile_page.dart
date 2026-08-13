@@ -265,7 +265,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
                 ? DecorationImage(image: image, fit: BoxFit.cover)
                 : null,
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.4),
+              color: AppColors.primary.withValues(alpha: 0.4),
               width: 2,
             ),
           ),
@@ -321,7 +321,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: selected
-                      ? AppColors.primary.withOpacity(0.15)
+                      ? AppColors.primary.withValues(alpha: 0.15)
                       : AppColors.getSurface(context),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
@@ -484,8 +484,9 @@ class _EditProfileViewState extends State<_EditProfileView> {
             children: _blockedApps.map((app) {
               return Chip(
                 label: Text(app),
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                side: BorderSide(
+                    color: AppColors.primary.withValues(alpha: 0.3)),
                 labelStyle:
                     TextStyle(color: AppColors.getTextPrimary(context)),
                 deleteIcon: const Icon(Icons.close, size: 18),
@@ -500,7 +501,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
           icon: const Icon(Icons.playlist_add_check, size: 18),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primary,
-            side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+            side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

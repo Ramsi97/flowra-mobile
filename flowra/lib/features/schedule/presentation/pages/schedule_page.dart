@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/widgets/empty_state.dart';
 import '../../domain/entities/schedule_item.dart';
 import '../bloc/schedule_bloc.dart';
 import '../bloc/schedule_event.dart';
@@ -17,6 +19,11 @@ class SchedulePage extends StatefulWidget {
 class _SchedulePageState extends State<SchedulePage> {
   late DateTime _selectedDate;
   final TextEditingController _aiController = TextEditingController();
+  final FocusNode _aiFocus = FocusNode();
+
+  /// Vertical space the floating bottom nav occupies; content is padded by this
+  /// so nothing hides behind it (the nested page paints behind the nav).
+  static const double _navClearance = 96;
 
   @override
   void initState() {
@@ -43,14 +50,12 @@ class _SchedulePageState extends State<SchedulePage> {
   @override
   void dispose() {
     _aiController.dispose();
+    _aiFocus.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black87;
-
     return BlocListener<ScheduleBloc, ScheduleState>(
       listener: (context, state) {
         if (state is ScheduleOperationSuccess) {
@@ -73,11 +78,12 @@ class _SchedulePageState extends State<SchedulePage> {
       child: Scaffold(
         backgroundColor: AppColors.getBackground(context),
         body: SafeArea(
+          bottom: false,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildHeader(textColor),
-              _buildWeekSelector(textColor),
+              _buildHeader(),
+              _buildWeekSelector(),
               Expanded(
                 child: BlocBuilder<ScheduleBloc, ScheduleState>(
                   builder: (context, state) {
@@ -108,24 +114,28 @@ class _SchedulePageState extends State<SchedulePage> {
                             _loadDay();
                           },
                           child: ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                            padding: const EdgeInsets.fromLTRB(
+                                AppDimens.lg, AppDimens.lg, AppDimens.lg, _navClearance),
                             itemCount: items.length,
                             itemBuilder: (context, index) {
-                              return _buildScheduleItemCard(items[index], isDark);
+                              return _buildScheduleItemCard(items[index]);
                             },
                           ),
                         ),
                         if (isLoading)
-                          Container(
-                            color: Colors.black.withOpacity(0.15),
-                            child: const Center(child: CircularProgressIndicator()),
+                          Positioned.fill(
+                            child: Container(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              child:
+                                  const Center(child: CircularProgressIndicator()),
+                            ),
                           ),
                       ],
                     );
                   },
                 ),
               ),
-              _buildAISchedulingBar(isDark),
+              _buildAISchedulingBar(),
             ],
           ),
         ),
@@ -133,9 +143,10 @@ class _SchedulePageState extends State<SchedulePage> {
     );
   }
 
-  Widget _buildHeader(Color textColor) {
+  Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(
+          AppDimens.xl, AppDimens.lg, AppDimens.md, AppDimens.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -145,17 +156,18 @@ class _SchedulePageState extends State<SchedulePage> {
               Text(
                 'Schedule',
                 style: TextStyle(
-                  color: textColor,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+                  color: AppColors.getTextPrimary(context),
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 DateFormat('MMMM yyyy').format(_selectedDate),
                 style: TextStyle(
-                  color: textColor.withOpacity(0.6),
-                  fontSize: 14,
+                  color: AppColors.getTextSecondary(context),
+                  fontSize: 13.5,
                 ),
               ),
             ],
@@ -163,12 +175,12 @@ class _SchedulePageState extends State<SchedulePage> {
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.build_outlined, color: AppColors.primary),
+                icon: const Icon(Icons.auto_fix_high_rounded,
+                    color: AppColors.primary),
                 tooltip: 'Fix conflicts',
                 onPressed: () {
-                  context
-                      .read<ScheduleBloc>()
-                      .add(FixScheduleEvent(DateTime.now().toUtc().toIso8601String()));
+                  context.read<ScheduleBloc>().add(
+                      FixScheduleEvent(DateTime.now().toUtc().toIso8601String()));
                 },
               ),
               PopupMenuButton<String>(
@@ -203,7 +215,8 @@ class _SchedulePageState extends State<SchedulePage> {
                       message:
                           'This removes every scheduled block in ${DateFormat('MMMM yyyy').format(_selectedDate)}.',
                       onConfirm: () => context.read<ScheduleBloc>().add(
-                            ClearMonthEvent(DateFormat('yyyy-MM').format(_selectedDate)),
+                            ClearMonthEvent(
+                                DateFormat('yyyy-MM').format(_selectedDate)),
                           ),
                     );
                   }
@@ -213,8 +226,8 @@ class _SchedulePageState extends State<SchedulePage> {
                     value: 'regenerate',
                     child: Row(
                       children: [
-                        Icon(Icons.refresh, size: 20),
-                        SizedBox(width: 8),
+                        Icon(Icons.refresh_rounded, size: 20),
+                        SizedBox(width: AppDimens.sm),
                         Text('Regenerate All'),
                       ],
                     ),
@@ -224,9 +237,11 @@ class _SchedulePageState extends State<SchedulePage> {
                     value: 'clear_day',
                     child: Row(
                       children: [
-                        Icon(Icons.delete_sweep, size: 20, color: AppColors.error),
-                        SizedBox(width: 8),
-                        Text('Clear Day', style: TextStyle(color: AppColors.error)),
+                        Icon(Icons.delete_sweep_rounded,
+                            size: 20, color: AppColors.error),
+                        SizedBox(width: AppDimens.sm),
+                        Text('Clear Day',
+                            style: TextStyle(color: AppColors.error)),
                       ],
                     ),
                   ),
@@ -234,9 +249,11 @@ class _SchedulePageState extends State<SchedulePage> {
                     value: 'clear_week',
                     child: Row(
                       children: [
-                        Icon(Icons.date_range, size: 20, color: AppColors.error),
-                        SizedBox(width: 8),
-                        Text('Clear Week', style: TextStyle(color: AppColors.error)),
+                        Icon(Icons.date_range_rounded,
+                            size: 20, color: AppColors.error),
+                        SizedBox(width: AppDimens.sm),
+                        Text('Clear Week',
+                            style: TextStyle(color: AppColors.error)),
                       ],
                     ),
                   ),
@@ -244,14 +261,17 @@ class _SchedulePageState extends State<SchedulePage> {
                     value: 'clear_month',
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_month, size: 20, color: AppColors.error),
-                        SizedBox(width: 8),
-                        Text('Clear Month', style: TextStyle(color: AppColors.error)),
+                        Icon(Icons.calendar_month_rounded,
+                            size: 20, color: AppColors.error),
+                        SizedBox(width: AppDimens.sm),
+                        Text('Clear Month',
+                            style: TextStyle(color: AppColors.error)),
                       ],
                     ),
                   ),
                 ],
-                icon: Icon(Icons.more_horiz, color: textColor),
+                icon: Icon(Icons.more_horiz_rounded,
+                    color: AppColors.getTextPrimary(context)),
               ),
             ],
           )
@@ -260,18 +280,21 @@ class _SchedulePageState extends State<SchedulePage> {
     );
   }
 
-  Widget _buildWeekSelector(Color textColor) {
+  Widget _buildWeekSelector() {
     final today = DateTime.now();
-    return Container(
-      height: 90,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return SizedBox(
+      height: 88,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppDimens.lg, vertical: AppDimens.sm),
         itemCount: 14, // Show 2 weeks
         itemBuilder: (context, index) {
-          final date = today.subtract(Duration(days: today.weekday - 1)).add(Duration(days: index));
+          final date = today
+              .subtract(Duration(days: today.weekday - 1))
+              .add(Duration(days: index));
           final isSelected = DateUtils.isSameDay(date, _selectedDate);
+          final isToday = DateUtils.isSameDay(date, today);
           final dayName = DateFormat('E').format(date).toUpperCase();
           final dayNum = DateFormat('d').format(date);
 
@@ -279,29 +302,18 @@ class _SchedulePageState extends State<SchedulePage> {
             onTap: () => _changeDate(date),
             child: Container(
               width: 54,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
+              margin: const EdgeInsets.symmetric(horizontal: AppDimens.xs),
               decoration: BoxDecoration(
                 gradient: isSelected ? AppColors.primaryGradient : null,
-                color: isSelected
-                    ? null
-                    : Theme.of(context).brightness == Brightness.dark
-                        ? AppColors.darkSurface
-                        : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  if (!isSelected && Theme.of(context).brightness == Brightness.light)
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                ],
+                color: isSelected ? null : AppColors.getSurface(context),
+                borderRadius: BorderRadius.circular(AppDimens.radiusMd),
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
-                      : Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white10
-                          : Colors.grey.shade200,
+                      : (isToday
+                          ? AppColors.primary
+                          : AppColors.getBorder(context)),
+                  width: isToday && !isSelected ? 1.5 : 1,
                 ),
               ),
               child: Column(
@@ -312,7 +324,7 @@ class _SchedulePageState extends State<SchedulePage> {
                     style: TextStyle(
                       color: isSelected
                           ? Colors.white
-                          : textColor.withOpacity(0.5),
+                          : AppColors.getTextSecondary(context),
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -321,7 +333,9 @@ class _SchedulePageState extends State<SchedulePage> {
                   Text(
                     dayNum,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : textColor,
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.getTextPrimary(context),
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -339,219 +353,193 @@ class _SchedulePageState extends State<SchedulePage> {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 64.0),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.calendar_today_outlined,
-                size: 64,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'No Schedule for Today',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Your day is clear! Generate a customized schedule from your active task list or ask AI to plan your day.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.getTextSecondary(context), height: 1.4),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                context
-                    .read<ScheduleBloc>()
-                    .add(LoadScheduleEvent(_dateToStr(_selectedDate)));
-              },
-              icon: const Icon(Icons.flash_on, color: Colors.white),
-              label: const Text('Generate Day Schedule', style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
+        padding: const EdgeInsets.only(top: 48, bottom: _navClearance),
+        child: EmptyState(
+          icon: Icons.calendar_today_outlined,
+          title: 'No schedule yet',
+          message:
+              'Your day is clear. Build a schedule from your active tasks, or ask AI to plan your day.',
+          primaryLabel: 'Generate schedule',
+          onPrimary: () {
+            context
+                .read<ScheduleBloc>()
+                .add(RegenerateScheduleEvent(_dateToStr(_selectedDate)));
+          },
+          secondaryLabel: 'Ask AI to plan my day',
+          onSecondary: () => _aiFocus.requestFocus(),
         ),
       ),
     );
   }
 
-  Widget _buildScheduleItemCard(ScheduleItem item, bool isDark) {
+  Widget _buildScheduleItemCard(ScheduleItem item) {
     final startTimeStr = DateFormat('h:mm a').format(item.startTime.toLocal());
     final endTimeStr = DateFormat('h:mm a').format(item.endTime.toLocal());
-    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     Color statusColor = AppColors.getTextSecondary(context);
-    IconData statusIcon = Icons.pending_actions;
+    IconData statusIcon = Icons.pending_actions_rounded;
 
     if (item.status == 'done') {
       statusColor = AppColors.success;
-      statusIcon = Icons.check_circle;
+      statusIcon = Icons.check_circle_rounded;
     } else if (item.status == 'skipped') {
       statusColor = AppColors.warning;
-      statusIcon = Icons.skip_next;
+      statusIcon = Icons.skip_next_rounded;
     }
 
+    final accent = item.isHard ? AppColors.error : AppColors.primary;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: AppDimens.md),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.getSurface(context),
+        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
         border: Border.all(
-          color: item.isHard 
-              ? AppColors.error.withOpacity(0.5) 
-              : Colors.transparent,
-          width: item.isHard ? 1.5 : 0,
+          color: item.isHard
+              ? AppColors.error.withValues(alpha: 0.5)
+              : AppColors.getBorder(context),
+          width: item.isHard ? 1.5 : 1,
         ),
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              color: const Color(0xFF12131A).withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
             )
         ],
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 6,
-              decoration: BoxDecoration(
-                color: item.isHard ? AppColors.error : AppColors.primary,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              decoration: item.status == 'done'
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              color: item.status == 'done'
-                                  ? AppColors.getTextSecondary(context)
-                                  : AppColors.getTextPrimary(context),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 5, color: accent),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppDimens.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                decoration: item.status == 'done'
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                color: item.status == 'done'
+                                    ? AppColors.getTextSecondary(context)
+                                    : AppColors.getTextPrimary(context),
+                              ),
                             ),
                           ),
-                        ),
-                        if (item.isHard)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.error.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
+                          if (item.isHard)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppDimens.sm, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withValues(alpha: 0.12),
+                                borderRadius:
+                                    BorderRadius.circular(AppDimens.radiusSm),
+                              ),
+                              child: const Text(
+                                'Hard',
+                                style: TextStyle(
+                                    color: AppColors.error,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            )
+                        ],
+                      ),
+                      const SizedBox(height: AppDimens.sm),
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time_rounded,
+                              size: 14, color: AppColors.primary),
+                          const SizedBox(width: 6),
+                          Text(
+                            '$startTimeStr – $endTimeStr',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.getTextSecondary(context),
                             ),
-                            child: const Text(
-                              'Hard',
-                              style: TextStyle(color: AppColors.error, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                          const Spacer(),
+                          Icon(statusIcon, size: 16, color: statusColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            item.status.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: statusColor,
                             ),
                           )
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.access_time, size: 14, color: AppColors.primary),
-                        const SizedBox(width: 6),
-                        Text(
-                          '$startTimeStr - $endTimeStr',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.getTextSecondary(context),
-                          ),
-                        ),
-                        const Spacer(),
-                        Icon(statusIcon, size: 16, color: statusColor),
-                        const SizedBox(width: 4),
-                        Text(
-                          item.status.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: statusColor,
-                          ),
-                        )
-                      ],
-                    )
-                  ],
+                        ],
+                      )
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const VerticalDivider(width: 1, thickness: 1),
-            PopupMenuButton<String>(
-              onSelected: (value) => _handleItemAction(item, value),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'done',
-                  child: Row(
-                    children: [
-                      Icon(Icons.check, color: AppColors.success),
-                      SizedBox(width: 8),
-                      Text('Mark Done'),
-                    ],
+              PopupMenuButton<String>(
+                onSelected: (value) => _handleItemAction(item, value),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'done',
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_rounded, color: AppColors.success),
+                        SizedBox(width: AppDimens.sm),
+                        Text('Mark Done'),
+                      ],
+                    ),
                   ),
-                ),
-                const PopupMenuItem(
-                  value: 'skipped',
-                  child: Row(
-                    children: [
-                      Icon(Icons.skip_next, color: AppColors.warning),
-                      SizedBox(width: 8),
-                      Text('Skip'),
-                    ],
+                  const PopupMenuItem(
+                    value: 'skipped',
+                    child: Row(
+                      children: [
+                        Icon(Icons.skip_next_rounded, color: AppColors.warning),
+                        SizedBox(width: AppDimens.sm),
+                        Text('Skip'),
+                      ],
+                    ),
                   ),
-                ),
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit, color: Colors.blue),
-                      SizedBox(width: 8),
-                      Text('Adjust Time'),
-                    ],
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_rounded, color: AppColors.info),
+                        SizedBox(width: AppDimens.sm),
+                        Text('Adjust Time'),
+                      ],
+                    ),
                   ),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete, color: AppColors.error),
-                      SizedBox(width: 8),
-                      Text('Delete', style: TextStyle(color: AppColors.error)),
-                    ],
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_rounded, color: AppColors.error),
+                        SizedBox(width: AppDimens.sm),
+                        Text('Delete',
+                            style: TextStyle(color: AppColors.error)),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-              icon: Icon(Icons.more_vert, color: AppColors.getTextSecondary(context)),
-            ),
-          ],
+                ],
+                icon: Icon(Icons.more_vert_rounded,
+                    color: AppColors.getTextSecondary(context)),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -561,9 +549,9 @@ class _SchedulePageState extends State<SchedulePage> {
     if (action == 'done' || action == 'skipped') {
       // Actually updates matching task/schedule item status
       context.read<ScheduleBloc>().add(UpdateScheduleItemEvent(
-        item.id,
-        {'status': action},
-      ));
+            item.id,
+            {'status': action},
+          ));
     } else if (action == 'delete') {
       context.read<ScheduleBloc>().add(DeleteScheduleItemEvent(item.id));
     } else if (action == 'edit') {
@@ -593,7 +581,7 @@ class _SchedulePageState extends State<SchedulePage> {
                 hintText: 'e.g., 09:30',
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppDimens.lg),
             TextField(
               controller: durationController,
               keyboardType: TextInputType.number,
@@ -630,14 +618,14 @@ class _SchedulePageState extends State<SchedulePage> {
               );
 
               context.read<ScheduleBloc>().add(
-                UpdateScheduleItemEvent(
-                  item.id,
-                  {
-                    'start_time': localNewTime.toUtc().toIso8601String(),
-                    'duration_minutes': newDuration,
-                  },
-                ),
-              );
+                    UpdateScheduleItemEvent(
+                      item.id,
+                      {
+                        'start_time': localNewTime.toUtc().toIso8601String(),
+                        'duration_minutes': newDuration,
+                      },
+                    ),
+                  );
               Navigator.pop(context);
             },
             child: const Text('Update'),
@@ -675,57 +663,67 @@ class _SchedulePageState extends State<SchedulePage> {
     );
   }
 
-  Widget _buildAISchedulingBar(bool isDark) {
+  Widget _buildAISchedulingBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(
+          AppDimens.lg, AppDimens.md, AppDimens.lg, AppDimens.md + _navClearance - 12),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? Colors.white10 : Colors.grey.shade200,
-          ),
-        ),
+        color: AppColors.getSurface(context),
+        border: Border(top: BorderSide(color: AppColors.getBorder(context))),
       ),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: _aiController,
+              focusNode: _aiFocus,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _sendAiPrompt(),
+              style: TextStyle(color: AppColors.getTextPrimary(context)),
               decoration: InputDecoration(
-                hintText: 'Ask AI: "Plan meeting after 2pm"...',
+                hintText: 'Ask AI: "Plan meeting after 2pm"…',
                 hintStyle: const TextStyle(fontSize: 14),
+                isDense: true,
+                filled: true,
+                fillColor: AppColors.getBackground(context),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.lg, vertical: AppDimens.md),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(AppDimens.radiusPill),
                   borderSide: BorderSide.none,
                 ),
-                fillColor: isDark 
-                    ? AppColors.darkBackground 
-                    : Colors.grey.shade100,
-                filled: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimens.radiusPill),
+                  borderSide: BorderSide.none,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            backgroundColor: AppColors.primary,
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 18),
-              onPressed: () {
-                final prompt = _aiController.text.trim();
-                if (prompt.isEmpty) return;
-                context.read<ScheduleBloc>().add(
-                      AIScheduleEvent(_dateToStr(_selectedDate), prompt),
-                    );
-                _aiController.clear();
-              },
+          const SizedBox(width: AppDimens.sm),
+          Material(
+            color: AppColors.primary,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: _sendAiPrompt,
+              child: const Padding(
+                padding: EdgeInsets.all(AppDimens.md),
+                child: Icon(Icons.send_rounded, color: Colors.white, size: 20),
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  void _sendAiPrompt() {
+    final prompt = _aiController.text.trim();
+    if (prompt.isEmpty) return;
+    context
+        .read<ScheduleBloc>()
+        .add(AIScheduleEvent(_dateToStr(_selectedDate), prompt));
+    _aiController.clear();
+    _aiFocus.unfocus();
   }
 }

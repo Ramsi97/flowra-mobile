@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../services/installed_apps_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
+import 'app_button.dart';
 
 /// A searchable, multi-select bottom sheet for choosing which apps to block.
 ///
@@ -135,7 +137,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.getTextSecondary(context).withOpacity(0.3),
+                  color: AppColors.getBorder(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -226,26 +228,11 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
               SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: () =>
-                          Navigator.pop(context, _selected.toList()),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text(
-                        'Done',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
-                    ),
+                  padding: const EdgeInsets.fromLTRB(
+                      AppDimens.xl, AppDimens.sm, AppDimens.xl, AppDimens.md),
+                  child: AppButton(
+                    label: 'Done',
+                    onPressed: () => Navigator.pop(context, _selected.toList()),
                   ),
                 ),
               ),
@@ -267,7 +254,7 @@ class _AppPickerSheetState extends State<_AppPickerSheet> {
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.12),
+        color: AppColors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       alignment: Alignment.center,

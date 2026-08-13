@@ -23,7 +23,7 @@ class AppLoader extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.25),
+                  color: AppColors.primary.withValues(alpha: 0.25),
                   blurRadius: 24,
                   spreadRadius: 2,
                 ),
@@ -32,7 +32,7 @@ class AppLoader extends StatelessWidget {
             child: CircularProgressIndicator(
               strokeWidth: 3,
               valueColor: AlwaysStoppedAnimation(AppColors.secondary),
-              backgroundColor: AppColors.primary.withOpacity(0.15),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.15),
             ),
           ),
           if (message != null) ...[
@@ -64,7 +64,7 @@ class AppLoaderOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Positioned.fill(
       child: ColoredBox(
-        color: Colors.black.withOpacity(0.35),
+        color: Colors.black.withValues(alpha: 0.35),
         child: AppLoader(message: message),
       ),
     );

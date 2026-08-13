@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/app_pills.dart';
 import '../../../task/domain/entities/task.dart';
 import '../bloc/task_bloc.dart';
 import '../bloc/task_event.dart';
@@ -17,135 +21,94 @@ class TaskListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color priorityColor;
-    String priorityText;
-    
-    if (task.priority == 1) {
-      priorityColor = Colors.red.withOpacity(0.15);
-      priorityText = 'high';
-    } else if (task.priority == 2) {
-      priorityColor = Colors.orange.withOpacity(0.15);
-      priorityText = 'medium';
-    } else {
-      priorityColor = Colors.green.withOpacity(0.15);
-      priorityText = 'low';
-    }
+    final done = task.status == 'done';
 
-    return Card(
-      color: AppColors.getSurface(context),
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: Theme.of(context).brightness == Brightness.dark 
-              ? Colors.white12 
-              : Colors.black12,
-          width: 1.5,
-        ),
-      ),
-      child: InkWell(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDimens.md),
+      child: AppCard(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Drag Indicator
-              Padding(
-                padding: const EdgeInsets.only(top: 2.0, right: 12.0),
-                child: Icon(
-                  Icons.drag_indicator,
-                  color: AppColors.getTextSecondary(context).withOpacity(0.4),
-                  size: 20,
+        padding: const EdgeInsets.all(AppDimens.lg),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 24,
+              width: 24,
+              child: Checkbox(
+                value: done,
+                onChanged: (bool? value) {
+                  final newStatus = (value == true) ? 'done' : 'todo';
+                  context.read<TaskBloc>().add(
+                        UpdateTaskEvent(task.id, {'status': newStatus}),
+                      );
+                },
+                activeColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                side: BorderSide(
+                  color: AppColors.getTextMuted(context),
+                  width: 1.5,
                 ),
               ),
-              // Checkbox
-              Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: Checkbox(
-                    value: task.status == 'done',
-                    onChanged: (bool? value) {
-                      final newStatus = (value == true) ? 'done' : 'todo';
-                      context.read<TaskBloc>().add(
-                            UpdateTaskEvent(task.id, {'status': newStatus}),
-                          );
-                    },
-                    activeColor: AppColors.secondary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    side: BorderSide(
-                      color: AppColors.getTextSecondary(context).withOpacity(0.3),
-                      width: 1.5,
+            ),
+            const SizedBox(width: AppDimens.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: done
+                          ? AppColors.getTextMuted(context)
+                          : AppColors.getTextPrimary(context),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      decoration: done ? TextDecoration.lineThrough : null,
+                      decorationColor: AppColors.getTextMuted(context),
                     ),
                   ),
-                ),
-              ),
-              // Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.title,
-                      style: TextStyle(
-                        color: AppColors.getTextPrimary(context),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        // Category Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.getTextSecondary(context).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'Development', // Default placeholder to match image
-                            style: TextStyle(
-                              color: AppColors.getTextPrimary(context).withOpacity(0.7),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                  const SizedBox(height: AppDimens.md),
+                  Wrap(
+                    spacing: AppDimens.sm,
+                    runSpacing: AppDimens.sm,
+                    children: [
+                      PriorityBadge(priority: task.priority, compact: true),
+                      if (task.duration.trim().isNotEmpty)
+                        AppChip(
+                          icon: Icons.timer_outlined,
+                          label: task.duration,
                         ),
-                        const SizedBox(width: 8),
-                        // Priority Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: priorityColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            priorityText,
-                            style: TextStyle(
-                              color: task.priority == 1 ? Colors.redAccent : 
-                                     task.priority == 2 ? Colors.orangeAccent : 
-                                     Colors.green,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                      if (task.deadline != null)
+                        AppChip(
+                          icon: Icons.event_outlined,
+                          label: _formatDeadline(task.deadline!),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      if (task.isHard)
+                        const AppChip(
+                          icon: Icons.bolt_rounded,
+                          label: 'Deep work',
+                          color: AppColors.accent,
+                        ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  String _formatDeadline(DateTime d) {
+    final now = DateTime.now();
+    final isToday = d.year == now.year && d.month == now.month && d.day == now.day;
+    if (isToday) return 'Today ${DateFormat('HH:mm').format(d)}';
+    if (d.year == now.year) return DateFormat('MMM d').format(d);
+    return DateFormat('MMM d, y').format(d);
   }
 }

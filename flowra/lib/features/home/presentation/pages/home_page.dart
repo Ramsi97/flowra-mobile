@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_dimens.dart';
+import '../../../../core/widgets/app_bottom_nav.dart';
+import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/section_header.dart';
 import '../../../task/presentation/bloc/task_bloc.dart';
 import '../../../task/presentation/bloc/task_event.dart';
 import '../../../task/presentation/bloc/task_state.dart';
@@ -88,7 +93,6 @@ class _HomePageState extends State<HomePage> {
                 SnackBar(
                   content: Text(state.message),
                   duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
                 ),
               );
             }
@@ -97,7 +101,9 @@ class _HomePageState extends State<HomePage> {
       ],
       child: Scaffold(
         backgroundColor: AppColors.getBackground(context),
+        extendBody: true,
         body: SafeArea(
+          bottom: false,
           child: IndexedStack(
             index: _selectedIndex,
             children: [
@@ -109,67 +115,76 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: _fabForIndex(),
-        bottomNavigationBar: _buildBottomNav(),
+        bottomNavigationBar: _selectedIndex == 4 ? null : _buildBottomNav(),
       ),
     );
   }
-  
+
   Widget _buildSettings() {
     return BlocBuilder<ThemeBloc, ThemeState>(
       builder: (context, state) {
         final isDark = state.themeMode == ThemeMode.dark;
-        final textColor = Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87;
 
         return ListView(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.zero,
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 24.0, top: 8),
+              padding: const EdgeInsets.fromLTRB(
+                AppDimens.xl,
+                AppDimens.lg,
+                AppDimens.xl,
+                AppDimens.md,
+              ),
               child: Row(
                 children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Icon(Icons.arrow_back, color: textColor),
-                    onPressed: () => setState(() => _selectedIndex = 0),
-                  ),
-                  const SizedBox(width: 12),
+                  _CircleBack(onTap: () => setState(() => _selectedIndex = 0)),
+                  const SizedBox(width: AppDimens.md),
                   Text(
                     'Settings',
                     style: TextStyle(
-                      color: textColor,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                      color: AppColors.getTextPrimary(context),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ],
               ),
             ),
-            _buildProfileHeader(textColor),
-            const SizedBox(height: 8),
-            _buildSettingTile(
-              icon: isDark ? Icons.dark_mode : Icons.light_mode,
-              title: 'Dark Mode',
-              subtitle: 'Toggle between dark and light themes',
-              trailing: Switch(
-                value: isDark,
-                onChanged: (_) => context.read<ThemeBloc>().add(ToggleThemeEvent()),
-                activeColor: AppColors.secondary,
+            Padding(
+              padding: AppDimens.screenPadding,
+              child: Column(
+                children: [
+                  _buildProfileHeader(),
+                  AppDimens.vGapLg,
+                  _buildSettingTile(
+                    icon: isDark
+                        ? Icons.dark_mode_rounded
+                        : Icons.light_mode_rounded,
+                    title: 'Dark Mode',
+                    subtitle: 'Toggle between dark and light themes',
+                    trailing: Switch(
+                      value: isDark,
+                      onChanged: (_) =>
+                          context.read<ThemeBloc>().add(ToggleThemeEvent()),
+                    ),
+                  ),
+                  AppDimens.vGapMd,
+                  _buildSettingTile(
+                    icon: Icons.logout_rounded,
+                    title: 'Log Out',
+                    subtitle: 'Sign out of your account',
+                    iconColor: AppColors.error,
+                    trailing: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 15,
+                      color: AppColors.getTextMuted(context),
+                    ),
+                    onTap: () =>
+                        context.read<AuthBloc>().add(LogoutRequested()),
+                  ),
+                ],
               ),
-              textColor: textColor,
-            ),
-            _buildSettingTile(
-              icon: Icons.logout,
-              title: 'Log Out',
-              subtitle: 'Sign out of your account',
-              trailing: IconButton(
-                icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                onPressed: () => context.read<AuthBloc>().add(LogoutRequested()),
-              ),
-              textColor: AppColors.error,
-              onTap: () => context.read<AuthBloc>().add(LogoutRequested()),
             ),
           ],
         );
@@ -177,12 +192,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildProfileHeader(Color textColor) {
+  Widget _buildProfileHeader() {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final user = state is AuthAuthenticated ? state.user : null;
-        final hasAvatar =
-            user != null && user.profilePictureUrl.isNotEmpty;
+        final hasAvatar = user != null && user.profilePictureUrl.isNotEmpty;
         final initial = (user != null && user.fullName.trim().isNotEmpty)
             ? user.fullName.trim()[0].toUpperCase()
             : '?';
@@ -200,27 +214,30 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppDimens.lg),
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(20),
+              gradient: AppColors.heroGradient,
+              borderRadius: BorderRadius.circular(AppDimens.radiusLg),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
             child: Row(
               children: [
                 Container(
-                  width: 60,
-                  height: 60,
+                  width: 58,
+                  height: 58,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.2),
-                    border: Border.all(color: Colors.white54, width: 1.5),
+                    color: Colors.white.withValues(alpha: 0.2),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
                     image: hasAvatar
                         ? DecorationImage(
                             image: NetworkImage(user.profilePictureUrl),
@@ -235,12 +252,12 @@ class _HomePageState extends State<HomePage> {
                           initial,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 26,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppDimens.lg),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,14 +280,17 @@ class _HomePageState extends State<HomePage> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withValues(alpha: 0.85),
                           fontSize: 13,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Colors.white70),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white.withValues(alpha: 0.8),
+                ),
               ],
             ),
           ),
@@ -284,55 +304,51 @@ class _HomePageState extends State<HomePage> {
     required String title,
     required String subtitle,
     required Widget trailing,
-    required Color textColor,
+    Color? iconColor,
     VoidCallback? onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark 
-            ? AppColors.darkSurface 
-            : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          if (Theme.of(context).brightness == Brightness.light)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+    final color = iconColor ?? AppColors.primary;
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(AppDimens.md),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppDimens.sm),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppDimens.radiusSm),
             ),
+            child: Icon(icon, color: color),
+          ),
+          const SizedBox(width: AppDimens.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: AppColors.getTextPrimary(context),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: AppColors.getTextSecondary(context),
+                    fontSize: 12.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppDimens.sm),
+          trailing,
         ],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: AppColors.primary),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(color: textColor.withOpacity(0.6), fontSize: 13),
-        ),
-        trailing: trailing,
-        onTap: onTap,
-      ),
-    );
-  }
-
-
-  Widget _buildAddButton() {
-    return FloatingActionButton(
-      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateTaskPage())),
-      backgroundColor: AppColors.secondary,
-      child: const Icon(Icons.add, color: Colors.white, size: 32),
     );
   }
 
@@ -360,100 +376,113 @@ class _HomePageState extends State<HomePage> {
 
         final now = DateTime.now();
         final filteredTasks = resolvedTasks.where((t) {
-            if (t.deadline == null) return true;
-            final deadline = t.deadline!;
-            final startOfToday = DateTime(now.year, now.month, now.day);
-            
-            if (resolvedMode == TaskViewMode.day) {
-              return deadline.year == now.year && 
-                     deadline.month == now.month && 
-                     deadline.day == now.day;
-            } else if (resolvedMode == TaskViewMode.week) {
-              final weekFromNow = now.add(const Duration(days: 7));
-              return deadline.isBefore(weekFromNow) && !deadline.isBefore(startOfToday);
-            }
-            return true; // Month/All for now
-          }).toList();
+          if (t.deadline == null) return true;
+          final deadline = t.deadline!;
+          final startOfToday = DateTime(now.year, now.month, now.day);
 
-          final completedCount = filteredTasks.where((t) => t.status == 'done').length;
-          final percentage = filteredTasks.isEmpty ? 0.0 : completedCount / filteredTasks.length;
+          if (resolvedMode == TaskViewMode.day) {
+            return deadline.year == now.year &&
+                deadline.month == now.month &&
+                deadline.day == now.day;
+          } else if (resolvedMode == TaskViewMode.week) {
+            final weekFromNow = now.add(const Duration(days: 7));
+            return deadline.isBefore(weekFromNow) &&
+                !deadline.isBefore(startOfToday);
+          }
+          return true; // Month/All for now
+        }).toList();
 
-          final scrollView = CustomScrollView(
-            slivers: [
+        final completedCount =
+            filteredTasks.where((t) => t.status == 'done').length;
+        final percentage =
+            filteredTasks.isEmpty ? 0.0 : completedCount / filteredTasks.length;
 
-              SliverToBoxAdapter(
-                child: BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, authState) {
-                    final user = authState is AuthAuthenticated
-                        ? authState.user
-                        : null;
-                    return FlowraAppBar(
-                      avatarUrl: user?.profilePictureUrl,
-                      userName: user?.fullName,
-                      onProfileTap: () => setState(() => _selectedIndex = 4),
-                    );
-                  },
-                ),
+        final scrollView = CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, authState) {
+                  final user =
+                      authState is AuthAuthenticated ? authState.user : null;
+                  return FlowraAppBar(
+                    avatarUrl: user?.profilePictureUrl,
+                    userName: user?.fullName,
+                    onProfileTap: () => setState(() => _selectedIndex = 4),
+                  );
+                },
               ),
-              SliverToBoxAdapter(
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: AppDimens.xl),
                 child: DailyGoalHeader(
                   percentage: percentage,
                   completedTasks: completedCount,
                   totalTasks: filteredTasks.length,
                 ),
               ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                AppDimens.xl,
+                AppDimens.sm,
+                AppDimens.xl,
+                AppDimens.lg,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: SectionHeader(
+                  title: 'Daily Flow',
+                  actionLabel: 'View all',
+                  onAction: () => setState(() => _selectedIndex = 1),
+                ),
+              ),
+            ),
+            if (filteredTasks.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: EmptyState(
+                  icon: Icons.wb_sunny_outlined,
+                  title: 'Your day is clear',
+                  message:
+                      'No tasks scheduled for this view. Add one or ask the AI to plan your day.',
+                  primaryLabel: 'Add a task',
+                  onPrimary: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CreateTaskPage()),
+                  ),
+                ),
+              )
+            else
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 40, 20, 16),
-                sliver: SliverToBoxAdapter(
-                  child: Text(
-                    'Daily Flow',
-                    style: TextStyle(
-                      color: AppColors.getTextPrimary(context),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                padding: const EdgeInsets.symmetric(horizontal: AppDimens.xl),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      return DailyFlowTile(
+                        task: filteredTasks[index],
+                        isFirst: index == 0,
+                        isLast: index == filteredTasks.length - 1,
+                      );
+                    },
+                    childCount: filteredTasks.length,
                   ),
                 ),
               ),
-              if (filteredTasks.isEmpty)
-                const SliverToBoxAdapter(
-                  child: Center(
-                    child: Text(
-                      'No tasks for this view. Start by adding one!',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        return DailyFlowTile(
-                          task: filteredTasks[index],
-                          isFirst: index == 0,
-                          isLast: index == filteredTasks.length - 1,
-                        );
-                      },
-                      childCount: filteredTasks.length,
-                    ),
-                  ),
-                ),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            const SliverToBoxAdapter(child: SizedBox(height: 120)),
+          ],
+        );
+
+        // During a mutation, show an overlay spinner so the list stays visible.
+        if (isMutating) {
+          return Stack(
+            children: [
+              scrollView,
+              const AppLoaderOverlay(),
             ],
           );
-
-          // During a mutation, show an overlay spinner so the list stays visible.
-          if (isMutating) {
-            return Stack(
-              children: [
-                scrollView,
-                const AppLoaderOverlay(),
-              ],
-            );
-          }
-          return scrollView;
+        }
+        return scrollView;
       },
     );
   }
@@ -477,62 +506,80 @@ class _HomePageState extends State<HomePage> {
           return const AppLoader(message: 'Loading tasks…');
         }
 
-        if (tasks.isEmpty) {
-          return Center(
-            child: Text(
-              'No tasks found.',
-              style: TextStyle(color: AppColors.getTextSecondary(context)),
-            ),
-          );
-        }
-
         final pendingCount = tasks.where((t) => t.status != 'done').length;
 
         final listView = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+              padding: const EdgeInsets.fromLTRB(
+                AppDimens.xl,
+                AppDimens.lg,
+                AppDimens.xl,
+                AppDimens.md,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'To Do',
+                    'Tasks',
                     style: TextStyle(
                       color: AppColors.getTextPrimary(context),
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
                     ),
                   ),
                   Text(
                     '$pendingCount pending',
-                    style: TextStyle(
-                      color: AppColors.secondary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
             ),
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: tasks.length,
-                itemBuilder: (context, index) {
-                  final task = tasks[index];
-                  return TaskListCard(
-                    task: task,
-                    onTap: () {
-                      Navigator.push(
+              child: tasks.isEmpty
+                  ? EmptyState(
+                      icon: Icons.checklist_rounded,
+                      title: 'No tasks yet',
+                      message:
+                          'Tap the + button to create your first task, or let the AI assistant draft a plan.',
+                      primaryLabel: 'Create a task',
+                      onPrimary: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => TaskDetailPage(task: task),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+                            builder: (_) => const CreateTaskPage()),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppDimens.xl,
+                        0,
+                        AppDimens.xl,
+                        120,
+                      ),
+                      itemCount: tasks.length,
+                      itemBuilder: (context, index) {
+                        final task = tasks[index];
+                        return TaskListCard(
+                          task: task,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    TaskDetailPage(task: task),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
             ),
           ],
         );
@@ -550,68 +597,72 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget? _fabForIndex() {
-    // No FAB on the Settings pane (index 4).
-    if (_selectedIndex == 4) return null;
-    if (_selectedIndex == 1) return _buildAddButton();
-    return _buildAIButton();
-  }
-
-  Widget _buildAIButton() {
-    return GestureDetector(
-      onTap: () => showAiAssistantSheet(context),
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.secondary.withOpacity(0.4),
-              blurRadius: 15,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: const Icon(Icons.psychology, color: Colors.white, size: 32),
-      ),
-    );
-  }
-
   Widget _buildBottomNav() {
-    return BottomAppBar(
-      color: AppColors.getSurface(context),
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8,
-      child: SizedBox(
-        height: 60,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _navItem(Icons.home, 0),
-            _navItem(Icons.list, 1),
-            const SizedBox(width: 48), // Space for FAB
-            _navItem(Icons.calendar_month, 2),
-            _navItem(Icons.self_improvement, 3),
-          ],
+    // The center action is "add task" on the Tasks tab, else the AI assistant.
+    final onTasksTab = _selectedIndex == 1;
+    return AppBottomNav(
+      currentIndex: _selectedIndex,
+      onTap: (i) => setState(() => _selectedIndex = i),
+      centerIcon: onTasksTab ? Icons.add_rounded : Icons.auto_awesome_rounded,
+      onCenterTap: () {
+        if (onTasksTab) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CreateTaskPage()),
+          );
+        } else {
+          showAiAssistantSheet(context);
+        }
+      },
+      destinations: const [
+        AppNavDestination(
+          icon: Icons.home_outlined,
+          selectedIcon: Icons.home_rounded,
+          label: 'Home',
         ),
-      ),
+        AppNavDestination(
+          icon: Icons.check_circle_outline_rounded,
+          selectedIcon: Icons.check_circle_rounded,
+          label: 'Tasks',
+        ),
+        AppNavDestination(
+          icon: Icons.calendar_month_outlined,
+          selectedIcon: Icons.calendar_month_rounded,
+          label: 'Schedule',
+        ),
+        AppNavDestination(
+          icon: Icons.self_improvement_outlined,
+          selectedIcon: Icons.self_improvement_rounded,
+          label: 'Focus',
+        ),
+      ],
     );
   }
+}
 
-  Widget _navItem(IconData icon, int index) {
-    final isSelected = _selectedIndex == index;
-    return IconButton(
-      icon: Icon(
-        icon,
-        color: isSelected ? AppColors.secondary : AppColors.textSecondary,
+/// Small circular back button used by the settings pane.
+class _CircleBack extends StatelessWidget {
+  final VoidCallback onTap;
+  const _CircleBack({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.getSurface(context),
+      shape:
+          CircleBorder(side: BorderSide(color: AppColors.getBorder(context))),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(9),
+          child: Icon(
+            Icons.arrow_back_rounded,
+            size: 20,
+            color: AppColors.getTextPrimary(context),
+          ),
+        ),
       ),
-      onPressed: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
     );
   }
 }
