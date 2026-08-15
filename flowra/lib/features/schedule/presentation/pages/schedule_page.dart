@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
 import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/settings_button.dart';
 import '../../domain/entities/schedule_item.dart';
 import '../bloc/schedule_bloc.dart';
 import '../bloc/schedule_event.dart';
@@ -273,6 +274,8 @@ class _SchedulePageState extends State<SchedulePage> {
                 icon: Icon(Icons.more_horiz_rounded,
                     color: AppColors.getTextPrimary(context)),
               ),
+              const SizedBox(width: AppDimens.sm),
+              const SettingsButton(),
             ],
           )
         ],

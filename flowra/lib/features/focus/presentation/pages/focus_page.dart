@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimens.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_picker_sheet.dart';
+import '../../../../core/widgets/settings_button.dart';
 import '../../domain/entities/focus_status.dart';
 import '../bloc/focus_bloc.dart';
 import '../bloc/focus_event.dart';
@@ -86,18 +88,11 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
                 padding: const EdgeInsets.fromLTRB(
                     AppDimens.xl, AppDimens.lg, AppDimens.xl, _navClearance),
                 children: [
-                  Padding(
+                  AppHeader(
+                    title: 'Focus',
+                    trailing: const SettingsButton(),
                     padding: const EdgeInsets.only(
-                        bottom: AppDimens.xl, top: AppDimens.sm),
-                    child: Text(
-                      'Focus',
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
+                        top: AppDimens.sm, bottom: AppDimens.xl),
                   ),
                   _buildStatusCard(status),
                   const SizedBox(height: AppDimens.xxl),
