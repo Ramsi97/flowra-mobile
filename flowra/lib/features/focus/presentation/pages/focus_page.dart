@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +9,8 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_picker_sheet.dart';
 import '../../../../core/widgets/settings_button.dart';
+import '../../../../core/di/injection_container.dart' show sl;
+import '../../../../core/services/focus_blocker_service.dart';
 import '../../domain/entities/focus_status.dart';
 import '../bloc/focus_bloc.dart';
 import '../bloc/focus_event.dart';
@@ -23,11 +27,18 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
   /// Bottom clearance so scrolled content never hides behind the floating nav.
   static const double _navClearance = 110;
 
+  // Android blocking permissions. Re-checked on resume (see lifecycle handler)
+  // so the CTA disappears right after the user grants them in system Settings.
+  bool _permsChecked = false;
+  bool _accessibilityOn = false;
+  bool _overlayOn = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     context.read<FocusBloc>().add(const LoadFocusStatusEvent());
+    _refreshPermissions();
   }
 
   @override
@@ -41,6 +52,7 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
     // Refresh the active-session banner when the app returns to the foreground.
     if (state == AppLifecycleState.resumed && mounted) {
       context.read<FocusBloc>().add(const LoadFocusStatusEvent());
+      _refreshPermissions();
     }
   }
 
@@ -98,6 +110,7 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
                   const SizedBox(height: AppDimens.xxl),
                   _buildFocusToggle(status),
                   const SizedBox(height: AppDimens.xxl),
+                  ..._buildPermissionSection(status),
                   _buildBlockedApps(status, textColor),
                 ],
               ),
@@ -374,6 +387,168 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
             }).toList(),
           ),
       ],
+    );
+  }
+
+  Future<void> _refreshPermissions() async {
+    if (!Platform.isAndroid) return;
+    final blocker = sl<FocusBlockerService>();
+    final accessibility = await blocker.isAccessibilityEnabled();
+    final overlay = await blocker.canDrawOverlays();
+    if (!mounted) return;
+    setState(() {
+      _accessibilityOn = accessibility;
+      _overlayOn = overlay;
+      _permsChecked = true;
+    });
+  }
+
+  /// The permission onboarding card — shown only on Android, only when there's
+  /// something to enforce, and only once we've confirmed a permission is missing.
+  List<Widget> _buildPermissionSection(FocusStatus status) {
+    if (!Platform.isAndroid) return const [];
+    if (!status.focusModeEnabled && status.blockedApps.isEmpty) return const [];
+    if (!_permsChecked) return const []; // avoid flashing before the first check
+    if (_accessibilityOn && _overlayOn) return const [];
+    return [
+      _buildPermissionCta(),
+      const SizedBox(height: AppDimens.xxl),
+    ];
+  }
+
+  Widget _buildPermissionCta() {
+    return Container(
+      padding: const EdgeInsets.all(AppDimens.xl),
+      decoration: BoxDecoration(
+        color: AppColors.getSurface(context),
+        borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppDimens.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+                ),
+                child: const Icon(Icons.lock_outline_rounded,
+                    color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: AppDimens.md),
+              Expanded(
+                child: Text(
+                  'Finish setting up blocking',
+                  style: TextStyle(
+                    color: AppColors.getTextPrimary(context),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDimens.md),
+          Text(
+            'To cover blocked apps during focus sessions, Flowra needs two Android '
+            'permissions. It only checks which app is in the foreground — it never '
+            'reads screen content or personal data.',
+            style: TextStyle(
+              color: AppColors.getTextSecondary(context),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          _permRow(
+            icon: Icons.accessibility_new_rounded,
+            title: 'Accessibility access',
+            subtitle: 'Detects the app you open so blocking can kick in.',
+            granted: _accessibilityOn,
+            actionLabel: 'Enable',
+            onAction: () => sl<FocusBlockerService>().openAccessibilitySettings(),
+          ),
+          _permRow(
+            icon: Icons.layers_rounded,
+            title: 'Display over other apps',
+            subtitle:
+                'Shows the focus lock screen (otherwise we just send you home).',
+            granted: _overlayOn,
+            actionLabel: 'Allow',
+            onAction: () => sl<FocusBlockerService>().openOverlaySettings(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _permRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool granted,
+    required String actionLabel,
+    required VoidCallback onAction,
+  }) {
+    final accent = granted ? AppColors.success : AppColors.primary;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppDimens.lg),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppDimens.sm),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppDimens.radiusSm),
+            ),
+            child: Icon(granted ? Icons.check_rounded : icon,
+                color: accent, size: 20),
+          ),
+          const SizedBox(width: AppDimens.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: AppColors.getTextPrimary(context),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: AppColors.getTextSecondary(context),
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppDimens.md),
+          if (granted)
+            const Text(
+              'On',
+              style: TextStyle(
+                color: AppColors.success,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            )
+          else
+            AppButton(
+              label: actionLabel,
+              expand: false,
+              onPressed: onAction,
+            ),
+        ],
+      ),
     );
   }
 

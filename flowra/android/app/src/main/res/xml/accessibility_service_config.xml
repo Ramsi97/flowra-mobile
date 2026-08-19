@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Config for FocusAccessibilityService.
+
+  We only need to know WHICH app came to the foreground, so we listen for a
+  single, cheap event type (window-state changes) and never retrieve window
+  content. This keeps the service light and is far friendlier for Google Play
+  review than a general-purpose "typeAllMask" + canRetrieveWindowContent setup.
+
+  No android:packageNames — the blocked set is dynamic (chosen by the user at
+  runtime), so we must observe every app and filter in code.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/focus_accessibility_description"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault"
+    android:notificationTimeout="100"
+    android:canRetrieveWindowContent="false" />

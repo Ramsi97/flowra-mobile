@@ -47,6 +47,11 @@ import 'package:flowra/features/focus/domain/usecase/get_focus_status_usecase.da
 import 'package:flowra/features/focus/domain/usecase/update_focus_config_usecase.dart';
 import 'package:flowra/features/focus/presentation/bloc/focus_bloc.dart';
 
+// Core device services (focus enforcement)
+import '../services/installed_apps_service.dart';
+import '../services/focus_blocker_service.dart';
+import '../services/focus_enforcement_coordinator.dart';
+
 final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
@@ -131,7 +136,9 @@ Future<void> initDependencies() async {
   sl.registerFactory(() => UpdateProfileUseCase(sl<AuthRepository>()));
 
   // ── Auth – BLoC ──────────────────────────────────────────────────────────
-  sl.registerFactory(() => AuthBloc(
+  // Singleton (not factory): the root BlocProvider creates the one instance the
+  // whole app uses, and FocusEnforcementCoordinator listens to that same stream.
+  sl.registerLazySingleton(() => AuthBloc(
         loginUseCase: sl<LoginUseCase>(),
         registerUseCase: sl<RegisterUseCase>(),
         logoutUseCase: sl<LogoutUseCase>(),
@@ -172,6 +179,18 @@ Future<void> initDependencies() async {
       ));
 
   // ── Settings – BLoC ──────────────────────────────────────────────────────
-  sl.registerLazySingleton(() => ThemeBloc());
+  sl.registerLazySingleton(() => ThemeBloc(prefs: sl<SharedPreferences>()));
+
+  // ── Focus enforcement (Android) ──────────────────────────────────────────
+  sl.registerLazySingleton(() => const InstalledAppsService());
+  sl.registerLazySingleton(() => FocusBlockerService());
+  sl.registerLazySingleton(() => FocusEnforcementCoordinator(
+        focusBloc: sl<FocusBloc>(),
+        scheduleBloc: sl<ScheduleBloc>(),
+        authBloc: sl<AuthBloc>(),
+        generateScheduleUseCase: sl<GenerateScheduleUseCase>(),
+        installedAppsService: sl<InstalledAppsService>(),
+        blockerService: sl<FocusBlockerService>(),
+      ));
 }
 

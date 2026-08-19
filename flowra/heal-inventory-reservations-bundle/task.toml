@@ -1,0 +1,21 @@
+[metadata]
+name = "Heal Broken Inventory Reservations"
+version = "1.0.0"
+author = "odyssey-author"
+description = "Debug and repair a Python inventory reservation service with subtle concurrency, timezone, and state-machine bugs."
+
+[verifier]
+timeout_sec = 600
+network_mode = "none"
+
+[agent]
+timeout_sec = 7200
+network_mode = "none"
+
+[environment]
+build_timeout_sec = 900
+cpus = 2
+memory_mb = 2048
+storage_mb = 1024
+gpus = 0
+network_mode = "none"

@@ -5,6 +5,10 @@
          block. Reviewed by Google Play; used only to populate the picker. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
+    <!-- Draws the full-screen "In Focus" lock over a blocked app during focus
+         sessions. Optional at runtime — enforcement bounces to the home screen
+         when this isn't granted. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:label="flowra"
@@ -33,6 +37,23 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Detects the foreground app during focus sessions so blocked apps can be
+             covered with the Flowra lock screen. Non-accessibility use, so we do NOT
+             set android:isAccessibilityTool; the description explains the real purpose
+             for Google Play review. -->
+        <service
+            android:name=".focus.FocusAccessibilityService"
+            android:label="@string/focus_accessibility_label"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -1,0 +1,37 @@
+# Task manifest for the Odyssey / Terminal-Bench-style harness.
+# Required sections: [metadata], [environment], [agent], [verifier].
+
+[metadata]
+name = "notifq-notification-scheduler"
+summary = "Implement a deterministic notification-scheduling engine for scheduled tasks: lead-time reminders, daily/weekly recurrence, timezone/DST-correct firing, quiet-hours defer/suppress, coalescing, and idempotent delivery that survives restarts."
+collection_family = "Library clone"
+task_family = "feature_development"
+verifier_family = "programmatic"
+difficulty = "hard"
+language = "python"
+tags = ["scheduling", "notifications", "timezones", "dst", "recurrence", "idempotency", "stdlib-only"]
+version = "1.0.0"
+
+[environment]
+# Build may fetch tzdata; no network is needed (or used) at agent/verify time.
+network_mode = "open"
+dockerfile = "environment/Dockerfile"
+cpus = 2
+memory_mb = 4096
+storage_mb = 8192
+gpus = 0
+
+[agent]
+# The agent solves fully offline.
+network_mode = "none"
+timeout_sec = 14400         # 4h; matches the ~4h expert estimate
+workdir = "/app"
+
+[verifier]
+network_mode = "none"
+timeout_sec = 1200
+entrypoint = "tests/test.sh"
+# Continuous reward parsed from the verifier's "SCORE: <float 0..1>" line.
+# Reference solution scores 1.0; untouched stub scores 0.0.
+score_regex = "SCORE:\\s*([0-9.]+)"
+pass_threshold = 0.70

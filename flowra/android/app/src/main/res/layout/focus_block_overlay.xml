@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Full-screen "In Focus" lock shown over a blocked app.
+
+  Root is clickable/focusable so touches and the Back button are swallowed by the
+  overlay instead of reaching the app underneath. Colours mirror the Flutter dark
+  theme (AppColors.darkBackground / primary / secondary) so it feels like Flowra.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/focus_overlay_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:clickable="true"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:background="#F00B0B12"
+    android:padding="32dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🌙"
+        android:textSize="56sp"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/focus_overlay_heading"
+        android:textColor="#22D3EE"
+        android:textSize="14sp"
+        android:letterSpacing="0.15"
+        android:textAllCaps="true"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/focus_overlay_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text=""
+        android:textColor="#F5F6FA"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/focus_overlay_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text=""
+        android:textColor="#A2A3B4"
+        android:textSize="15sp"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/focus_overlay_message"
+        android:textColor="#A2A3B4"
+        android:textSize="14sp"
+        android:layout_marginBottom="32dp" />
+
+    <Button
+        android:id="@+id/focus_overlay_close"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/focus_overlay_close"
+        android:textColor="#FFFFFF"
+        android:textAllCaps="false"
+        android:paddingLeft="32dp"
+        android:paddingRight="32dp"
+        android:background="#6366F1" />
+</LinearLayout>

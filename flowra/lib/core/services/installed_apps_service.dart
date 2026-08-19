@@ -26,6 +26,11 @@ class SelectableApp {
 class InstalledAppsService {
   const InstalledAppsService();
 
+  /// Process-lifetime cache of lower-cased app name → package id, built lazily.
+  /// Apps installed/removed after first use won't appear until the next launch —
+  /// an accepted trade-off for avoiding a full enumeration on every policy sync.
+  static Map<String, String>? _packageByName;
+
   /// Curated fallback list of frequently-distracting apps.
   static const List<String> presetApps = [
     'Instagram',
@@ -67,6 +72,48 @@ class InstalledAppsService {
       }
     }
     return _presetSelectable();
+  }
+
+  /// Resolves display [names] (as stored in `FocusStatus.blockedApps`) to the
+  /// installed package ids the native blocker enforces on.
+  ///
+  /// Android-only; returns an empty set elsewhere. Names with no matching
+  /// installed app (uninstalled presets, custom entries) are silently dropped —
+  /// they simply can't be enforced.
+  Future<Set<String>> resolvePackages(List<String> names) async {
+    if (!Platform.isAndroid || names.isEmpty) return <String>{};
+    final map = await _ensurePackageMap();
+    final result = <String>{};
+    for (final name in names) {
+      final pkg = map[name.toLowerCase().trim()];
+      if (pkg != null && pkg.isNotEmpty) result.add(pkg);
+    }
+    return result;
+  }
+
+  Future<Map<String, String>> _ensurePackageMap() async {
+    final cached = _packageByName;
+    if (cached != null) return cached;
+
+    final map = <String, String>{};
+    try {
+      // withIcon:false — we only need the name→package mapping here, so skip the
+      // expensive icon decoding the picker needs.
+      final List<AppInfo> apps = await InstalledApps.getInstalledApps(
+        excludeSystemApps: true,
+        excludeNonLaunchableApps: true,
+        withIcon: false,
+      );
+      for (final a in apps) {
+        if (a.packageName.isNotEmpty) {
+          map[a.name.toLowerCase().trim()] = a.packageName;
+        }
+      }
+    } catch (_) {
+      // Leave the map empty; nothing will be resolvable this run.
+    }
+    _packageByName = map;
+    return map;
   }
 
   List<SelectableApp> _presetSelectable() =>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown as the service name in Settings → Accessibility. -->
+    <string name="focus_accessibility_label">Flowra Focus Blocking</string>
+
+    <!-- Shown in the system dialog when enabling the service. Must accurately
+         describe why Flowra uses accessibility access (reviewed by Google Play):
+         it only reads which app is in the foreground so it can block the apps you
+         chose during your scheduled focus sessions. -->
+    <string name="focus_accessibility_description">Flowra uses this to detect which app is currently in the foreground so it can block the apps you chose during your scheduled focus sessions. It does not read screen content or collect personal data.</string>
+
+    <!-- Focus lock overlay copy. -->
+    <string name="focus_overlay_heading">In Focus</string>
+    <string name="focus_overlay_message">Stay on task — this app is blocked right now.</string>
+    <string name="focus_overlay_close">Close</string>
+</resources>

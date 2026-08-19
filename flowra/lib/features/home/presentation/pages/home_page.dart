@@ -11,7 +11,10 @@ import '../../../task/presentation/bloc/task_event.dart';
 import '../../../task/presentation/bloc/task_state.dart';
 import '../../../task/domain/entities/task.dart';
 import '../widgets/daily_flow_tile.dart';
-import '../widgets/daily_goal_header.dart';
+import '../widgets/home_greeting_header.dart';
+import '../widgets/today_summary_card.dart';
+import '../widgets/up_next_card.dart';
+import '../widgets/quick_actions_row.dart';
 import '../../../task/presentation/pages/create_task_page.dart';
 import '../../../task/presentation/pages/task_detail_page.dart';
 import '../../../auth/presentation/bloc/bloc/auth_bloc.dart';
@@ -21,8 +24,11 @@ import '../../../schedule/presentation/pages/schedule_page.dart';
 import '../../../focus/presentation/pages/focus_page.dart';
 import '../../../../core/widgets/app_loader.dart';
 import '../../../../core/widgets/error_view.dart';
-import '../../../../core/widgets/flowra_app_bar.dart';
 import '../../../../core/widgets/settings_button.dart';
+import '../../../focus/presentation/bloc/focus_bloc.dart';
+import '../../../focus/presentation/bloc/focus_event.dart';
+import '../../../focus/presentation/bloc/focus_state.dart';
+import '../../../schedule/domain/entities/schedule_item.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -70,6 +76,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     context.read<TaskBloc>().add(LoadTasksEvent(forceRefresh: true));
+    context.read<FocusBloc>().add(const LoadFocusStatusEvent());
   }
 
   @override
@@ -158,28 +165,75 @@ class _HomePageState extends State<HomePage> {
 
         final completedCount =
             filteredTasks.where((t) => t.status == 'done').length;
+        final pendingTasks =
+            filteredTasks.where((t) => t.status != 'done').toList();
+        final pendingCount = pendingTasks.length;
+        final highCount = pendingTasks.where((t) => t.priority == 1).length;
         final percentage =
             filteredTasks.isEmpty ? 0.0 : completedCount / filteredTasks.length;
+
+        // The single "do this next" task: soonest deadline among unfinished
+        // tasks, falling back to the highest priority when none have a deadline.
+        Task? nextTask;
+        if (pendingTasks.isNotEmpty) {
+          final withDeadline =
+              pendingTasks.where((t) => t.deadline != null).toList()
+                ..sort((a, b) => a.deadline!.compareTo(b.deadline!));
+          if (withDeadline.isNotEmpty) {
+            nextTask = withDeadline.first;
+          } else {
+            final byPriority = [...pendingTasks]
+              ..sort((a, b) => a.priority.compareTo(b.priority));
+            nextTask = byPriority.first;
+          }
+        }
 
         final scrollView = CustomScrollView(
           slivers: [
             const SliverToBoxAdapter(
-              child: FlowraAppBar(trailing: SettingsButton()),
+              child: HomeGreetingHeader(trailing: SettingsButton()),
             ),
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: AppDimens.xl),
-                child: DailyGoalHeader(
-                  percentage: percentage,
-                  completedTasks: completedCount,
-                  totalTasks: filteredTasks.length,
+              child: TodaySummaryCard(
+                percentage: percentage,
+                done: completedCount,
+                pending: pendingCount,
+                highPriority: highCount,
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: AppDimens.lg)),
+            SliverToBoxAdapter(
+              child: BlocBuilder<FocusBloc, FocusState>(
+                builder: (context, focusState) {
+                  ScheduleItem? activeItem;
+                  if (focusState is FocusLoaded && focusState.status.isActive) {
+                    activeItem = focusState.status.currentItem;
+                  }
+                  return UpNextCard(
+                    nextTask: nextTask,
+                    activeFocusItem: activeItem,
+                    onStartFocus: () => setState(() => _selectedIndex = 3),
+                    onPlanDay: () => showAiAssistantSheet(context),
+                  );
+                },
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: AppDimens.lg)),
+            SliverToBoxAdapter(
+              child: QuickActionsRow(
+                onAddTask: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreateTaskPage()),
                 ),
+                onPlanAi: () => showAiAssistantSheet(context),
+                onFocus: () => setState(() => _selectedIndex = 3),
+                onSchedule: () => setState(() => _selectedIndex = 2),
               ),
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
                 AppDimens.xl,
-                AppDimens.sm,
+                AppDimens.xl,
                 AppDimens.xl,
                 AppDimens.lg,
               ),
@@ -192,18 +246,19 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             if (filteredTasks.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: EmptyState(
-                  icon: Icons.wb_sunny_outlined,
-                  title: 'Your day is clear',
-                  message:
-                      'No tasks scheduled for this view. Add one or ask the AI to plan your day.',
-                  primaryLabel: 'Add a task',
-                  onPrimary: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const CreateTaskPage()),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppDimens.xxl),
+                  child: EmptyState(
+                    icon: Icons.wb_sunny_outlined,
+                    title: 'Your day is clear',
+                    message:
+                        'No tasks scheduled for this view. Add one or ask the AI to plan your day.',
+                    primaryLabel: 'Add a task',
+                    onPrimary: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CreateTaskPage()),
+                    ),
                   ),
                 ),
               )

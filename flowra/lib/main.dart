@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/network/api_client.dart';
+import 'core/services/focus_enforcement_coordinator.dart';
 import 'core/theme/app_theme.dart';
 import 'package:flowra/features/auth/presentation/bloc/bloc/auth_bloc.dart';
 import 'package:flowra/features/auth/presentation/pages/login_page.dart';
@@ -16,6 +17,8 @@ import 'package:flowra/features/home/presentation/pages/splash_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await di.initDependencies();
+  // Start syncing focus policy to the native Android blocker (no-ops elsewhere).
+  di.sl<FocusEnforcementCoordinator>().start();
   runApp(const FlowraApp());
 }
 
